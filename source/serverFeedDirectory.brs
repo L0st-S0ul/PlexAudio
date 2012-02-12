@@ -34,11 +34,11 @@ Function load_directory_feed(conn As Object) As Dynamic
     http = NewHttp(conn.ServerURL)
 	DirectoryFeed = []
 	
-    Dbg("url: ", http.Http.GetUrl())
+    Dbg("directory feed url: ", http.Http.GetUrl())
 
     m.Timer.Mark()
     response = http.GetToStringWithRetry()
-    Dbg("Server Communication Took: ", m.Timer)
+    'Dbg("Server Communication Took: ", m.Timer)
 
     m.Timer.Mark()
     xml=CreateObject("roXMLElement")
@@ -46,7 +46,7 @@ Function load_directory_feed(conn As Object) As Dynamic
         print "Can't parse feed"
         return invalid
     endif
-    Dbg("Parse Took: ", m.Timer)
+    'Dbg("Parse Took: ", m.Timer)
 
     m.Timer.Mark()
     if xml.Directory = invalid then
@@ -70,7 +70,7 @@ Function load_directory_feed(conn As Object) As Dynamic
         o = ParseDirectoryNode(conn.BaseURL, e)
 		DirectoryFeed.Push(o)
     next
-    Dbg("XML Loading: ", m.Timer)
+    'Dbg("XML Loading: ", m.Timer)
 
 	return DirectoryFeed
 End Function

@@ -32,11 +32,11 @@ Function load_artist_feed(conn As Object) As Dynamic
     http = NewHttp(conn.ServerURL)
 	ArtistFeed = []
 	
-    Dbg("url: ", http.Http.GetUrl())
+    Dbg("artist feed url: ", http.Http.GetUrl())
 
     m.Timer.Mark()
     response = http.GetToStringWithRetry()
-    Dbg("Server Communication Took: ", m.Timer)
+    'Dbg("Server Communication Took: ", m.Timer)
 
     m.Timer.Mark()
     xml=CreateObject("roXMLElement")
@@ -44,7 +44,7 @@ Function load_artist_feed(conn As Object) As Dynamic
         print "Can't parse feed"
         return invalid
     endif
-    Dbg("Parse Took: ", m.Timer)
+    'Dbg("Parse Took: ", m.Timer)
 
     m.Timer.Mark()
     if xml.Directory = invalid then
@@ -68,7 +68,7 @@ Function load_artist_feed(conn As Object) As Dynamic
         o = ParseArtistNode(conn.BaseURL, e)
 		ArtistFeed.Push(o)
     next
-    Dbg("XML Loading: ", m.Timer)
+    'Dbg("XML Loading: ", m.Timer)
 
 	return ArtistFeed
 End Function

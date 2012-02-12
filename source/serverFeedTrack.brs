@@ -24,11 +24,11 @@ Function load_track_feed(conn As Object) As Dynamic
     http = NewHttp(conn.ServerURL)
 	TrackFeed = CreateObject("roArray", 100, true)
 	
-    Dbg("url: ", http.Http.GetUrl())
+    Dbg("track feed url: ", http.Http.GetUrl())
 
     m.Timer.Mark()
     response = http.GetToStringWithRetry()
-    Dbg("Server Communication Took: ", m.Timer)
+    'Dbg("Server Communication Took: ", m.Timer)
 
     m.Timer.Mark()
     xml=CreateObject("roXMLElement")
@@ -36,7 +36,7 @@ Function load_track_feed(conn As Object) As Dynamic
         print "Can't parse feed"
         return invalid
     endif
-    Dbg("Parse Took: ", m.Timer)
+    'Dbg("Parse Took: ", m.Timer)
 
     m.Timer.Mark()
     if xml.Track = invalid then
@@ -55,12 +55,12 @@ Function load_track_feed(conn As Object) As Dynamic
     endif
 	
     directories = xml.GetChildElements()
-    print "number of directories: " + itostr(directories.Count())
+    'print "number of directories: " + itostr(directories.Count())
     for each e in directories 
         o = ParseTrackNode(conn.BaseURL, e)
 		TrackFeed.Push(o)
     next
-    Dbg("XML Loading: ", m.Timer)
+    'Dbg("XML Loading: ", m.Timer)
 
 	return TrackFeed
 End Function
@@ -117,8 +117,6 @@ Function ParseTrackNode(BaseURL, xml As Object) As dynamic
 				o.HDPosterURL = "file://pkg:/images/track-na.jpg"
 			end if
 		end if
-		
-		
     else
         print "ParseTrackNode skip: " + xml.GetName()
         return invalid
