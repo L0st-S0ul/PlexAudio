@@ -24,12 +24,18 @@ Sub springboard_reload_buttons(playstate as integer)
     m.screen.ClearButtons()
     if (playstate = 2)  then ' playing
         m.screen.AddButton(1, "pause playing")
+		m.screen.AddButton(3, "next song")
+		m.screen.AddButton(4, "previous song")
        	m.screen.AddButton(2, "stop playing")
     else if (playstate = 1) then ' paused
       	m.screen.AddButton(1, "resume playing")
+		m.screen.AddButton(3, "next song")
+		m.screen.AddButton(4, "previous song")
        	m.screen.AddButton(2, "stop playing")
     else ' stopped
        	m.screen.AddButton(1, "start playing")
+		m.screen.AddButton(3, "next song")
+		m.screen.AddButton(4, "previous song")
     endif
 End Sub
 

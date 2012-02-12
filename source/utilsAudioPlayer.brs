@@ -19,7 +19,7 @@ Function AudioInit() As Object
 	
 	o.isPlayState			= 0   ' Stopped
 	o.setPlayState			= audioPlayer_newstate
-	o.setupSong			= audioPlayer_setup
+	o.setupSong				= audioPlayer_setup
 	o.clearContent			= audioPlayer_clear_content
 	o.setContentList		= audioPlayer_set_content_list
 	o.getMsgEvents			= audioPlayer_getmsg

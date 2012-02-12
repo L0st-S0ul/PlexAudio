@@ -45,7 +45,7 @@ Function showPosterScreen(content, originalSource, selectedItem) As Integer
                 contentType = selected.ContentType
                 if contentType = "audio" then
 					SongList = CreateMp3SongList(myContent, currentTitle)
-					Show_Audio_Screen(songlist.posteritems[msg.GetIndex()], "Songs")
+					Show_Audio_Screen_For_Multi(songlist.posteritems, msg.GetIndex(), currentTitle)
                 else
                 	showNextPosterScreen(currentTitle, selected)
                 end if
@@ -96,9 +96,10 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
     scr.Show()
 
     ' start playing
-    print "Starting Song Playback:";song.feedurl
-    Audio.setupSong(song.feedurl, song.streamformat)
+    print "Starting Song Playback:";song.Url
+    Audio.setupSong(song.Url, song.StreamFormat)
     Audio.audioplayer.setNext(0)
+	
     Audio.setPlayState(2)		' start playing
 	
     while true
@@ -158,10 +159,171 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
 	return 0
 End Sub
 
+Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as string) As Integer
+    Audio = AudioInit()
+    
+	Print "##################################### CREATE AUDIO DETAIL SCREEN #####################################"
+	picture = songs[currentSelect].HDPosterUrl
+    o = CreateObject("roAssociativeArray")
+    o.HDPosterUrl = picture
+    o.SDPosterUrl = picture
+    o.Title = songs[currentSelect].shortdescriptionline1
+	o.Description = songs[currentSelect].shortdescriptionline2
+	o.Length = songs[currentSelect].Length
+    o.contenttype = "episode"
+	
+    if (songs[currentSelect].artist > "")
+        o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+    end if
+	
+    scr = create_springboard(Audio.port, prevLoc)
+    scr.ReloadButtons(2) 'set buttons for state "playing"
+    scr.screen.SetTitle("Screen Title")
+
+    ' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
+    scr.screen.SetContent(o)
+    scr.Show()
+
+    ' start playing
+    'print "Starting Song Playback:";song.Url
+	totalSongs = songs.Count()
+	
+	Audio.setContentList( songs )
+    Audio.audioplayer.setNext( currentSelect )
+    Audio.setPlayState(2)		' start playing
+	Audio.audioplayer.setNext( currentSelect + 1)
+	
+    while true
+        msg = Audio.getMsgEvents(20000, "roSpringboardScreenEvent")
+
+        if type(msg) = "roAudioPlayerEvent"  then	' event from audio player
+            if msg.isStatusMessage() then
+                message = msg.getMessage()
+                if message = "end of playlist"
+                    print "end of playlist (obsolete status msg event)"
+                end if
+            else if msg.isListItemSelected() then
+                print "playback started"
+            else if msg.isRequestSucceeded()
+                print "ending song:"; msg.GetIndex()
+                Audio.setPlayState(0)	' stop the player, wait for user input
+                scr.ReloadButtons(0)    ' set button to allow play start
+            else if msg.isRequestFailed()
+                print "failed to play song:"; msg.GetData()
+            else if msg.isFullResult()
+                print "FullResult: End of Playlist"
+            else if msg.isPaused()
+                print "Paused"
+            else if msg.isResumed()
+                print "Resumed"
+            end if
+        else if type(msg) = "roSpringboardScreenEvent" then	' event from user
+            if msg.isScreenClosed()
+				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE AUDIO DETAIL SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                Audio.setPlayState(0)
+                return -1
+            end if
+			
+            if msg.isRemoteKeyPressed() then
+                button = msg.GetIndex()
+                print "Remote Key button = "; button
+            else if msg.isButtonPressed() then
+                button = msg.GetIndex()
+                print "button index="; button
+                if button = 1 'pause or resume
+                    if Audio.isPlayState < 2	' stopped or paused?
+                        if (Audio.isPlayState = 0)
+                              Audio.audioplayer.setNext(currentSelect)
+                        end if
+						newstate = 2  ' now playing
+					else 'started
+                         newstate = 1 ' now paused
+                    end if
+                else if button = 2 ' stop
+                    newstate = 0 ' now stopped
+				else if button = 3 ' next
+					currentSelect = currentSelect + 1
+					if currentSelect = totalSongs then
+						currentSelect = 0
+					end if
+					print "Going to next song: ";currentSelect
+					
+					Audio.setPlayState(0)
+					Audio.audioplayer.setNext(currentSelect)
+					
+					picture = songs[currentSelect].HDPosterUrl
+					o = CreateObject("roAssociativeArray")
+					o.HDPosterUrl = picture
+					o.SDPosterUrl = picture
+					o.Title = songs[currentSelect].shortdescriptionline1
+					o.Description = songs[currentSelect].shortdescriptionline2
+					o.Length = songs[currentSelect].Length
+					o.contenttype = "episode"
+					
+					print "Going to next song: ";o.Title
+					
+					if (songs[currentSelect].artist > "")
+						o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+					end if
+					
+					scr = create_springboard(Audio.port, prevLoc)
+					scr.ReloadButtons(2) 'set buttons for state "playing"
+					scr.screen.SetTitle("Screen Title")
+
+					' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
+					scr.screen.SetContent(o)
+					scr.Show()
+					
+					newstate = 2 
+				else if button = 4 ' previous
+					currentSelect = currentSelect - 1
+					if currentSelect < 0 then
+						currentSelect = totalSongs - 1
+					end if
+					print "Going to previous song: ";currentSelect
+					
+					Audio.setPlayState(0)
+					Audio.audioplayer.setNext(currentSelect)
+					
+					picture = songs[currentSelect].HDPosterUrl
+					o = CreateObject("roAssociativeArray")
+					o.HDPosterUrl = picture
+					o.SDPosterUrl = picture
+					o.Title = songs[currentSelect].shortdescriptionline1
+					o.Description = songs[currentSelect].shortdescriptionline2
+					o.Length = songs[currentSelect].Length
+					o.contenttype = "episode"
+					
+					print "Going to previous song: ";o.Title
+					
+					if (songs[currentSelect].artist > "")
+						o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+					end if
+					
+					scr = create_springboard(Audio.port, prevLoc)
+					scr.ReloadButtons(2) 'set buttons for state "playing"
+					scr.screen.SetTitle("Screen Title")
+					' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
+					scr.screen.SetContent(o)
+					scr.Show()	
+					
+					newstate = 2 
+                end if
+				
+                Audio.setPlayState(newstate)
+                scr.ReloadButtons(newstate)
+            end if
+        end if
+    end while
+	return 0
+End Sub
+
 Function CreateMp3SongList( songContent, albumTitle ) as Object	
     aa = CreateObject("roAssociativeArray")
     aa.posteritems = CreateObject("roArray", songContent.count(), true)
     
+	print "Album Title: ";albumTitle
+	
 	for each song in songContent
 		a = CreateSong( song.Title, albumTitle, song.Artist, song.Album, song.AlbumYear, song.Codec, song.feedurl, song.HDPosterURL, song.Duration)
 		aa.posteritems.push(a)
@@ -170,7 +332,7 @@ Function CreateMp3SongList( songContent, albumTitle ) as Object
     return aa
 End Function
 
-Function CreateSong(title as string, description as string, artist as string, album as string, Year as string, streamformat as string, feedurl as string, imagelocation as string, duration) as Object
+Function CreateSong(title as string, description as string, artist as string, album as string, year as string, streamformat as string, feedurl as string, imagelocation as string, duration) as Object
 	item = CreateObject("roAssociativeArray")
 	item.ShortDescriptionLine1 = title
     item.ShortDescriptionLine2 = description
@@ -181,8 +343,8 @@ Function CreateSong(title as string, description as string, artist as string, al
 	item.Year = year
     item.Title = title    ' Song name
 	item.Length = int(val(duration)/1000)
-    item.feedurl = feedurl
-    item.streamformat = streamformat
-    item.picture = item.HDPosterUrl      ' default audioscreen picture to PosterScreen Image
+    item.Url = feedurl
+    item.StreamFormat = streamformat
+    item.picture = item.HDPosterUrl 
     return item
 End Function

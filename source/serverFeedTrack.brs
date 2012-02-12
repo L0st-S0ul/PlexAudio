@@ -78,16 +78,22 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
 		o.Title = xml@title
 		if parentxml@grandparentTitle <> invalid then
 			o.Artist = parentxml@grandparentTitle
+		else if xml@grandparentTitle <> invalid then
+			o.Artist = xml@grandparentTitle
 		else
-			o.AlbumYear = "Untitled"
+			o.Artist = "Untitled"
 		end if
 		if parentxml@parentTitle <> invalid then
 			o.Album = parentxml@parentTitle
+		else if xml@parentTitle <> invalid then
+			o.Album = xml@parentTitle
 		else
-			o.AlbumYear = "Album Unknown"
+			o.Album = "Album Unknown"
 		end if
 		if parentxml@parentYear <> invalid then
 			o.AlbumYear = parentxml@parentYear
+		else if xml@parentTitle <> invalid then
+			o.AlbumYear = xml@parentYear
 		else
 			o.AlbumYear = "Unknown"
 		end if
