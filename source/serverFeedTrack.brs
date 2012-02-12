@@ -76,6 +76,7 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
     if xml.GetName() = "Track" then	
 		o.ContentType = "audio"
 		o.Title = xml@title
+		
 		if parentxml@grandparentTitle <> invalid then
 			o.Artist = parentxml@grandparentTitle
 		else if xml@grandparentTitle <> invalid then
@@ -83,6 +84,7 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
 		else
 			o.Artist = "Untitled"
 		end if
+		
 		if parentxml@parentTitle <> invalid then
 			o.Album = parentxml@parentTitle
 		else if xml@parentTitle <> invalid then
@@ -90,13 +92,15 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
 		else
 			o.Album = "Album Unknown"
 		end if
+		
 		if parentxml@parentYear <> invalid then
 			o.AlbumYear = parentxml@parentYear
-		else if xml@parentTitle <> invalid then
+		else if xml@parentYear <> invalid then
 			o.AlbumYear = xml@parentYear
 		else
 			o.AlbumYear = "Unknown"
 		end if
+		
 		if xml@originalTitle <> invalid then
 			if len(xml@originalTitle) > 180 then
 				o.Description = left(xml@originalTitle, 180)+"..."
