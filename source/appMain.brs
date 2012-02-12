@@ -6,10 +6,8 @@ Sub Main()
     screenFacade = CreateObject("roPosterScreen")
     screenFacade.show()
 	
-    'initialize theme attributes like titles, logos and overhang color
     initTheme()
 
-    'prepare the screen for display and get ready to begin
     screen=preShowHomeScreen()
     if screen=invalid then
         print "unexpected error in preShowHomeScreen"

@@ -13,9 +13,9 @@ Function preShowHomeScreen() As Object
 End Function
 
 Function showHomeScreen(screen, server) As Integer
-	sectionList = CreateObject("roArray", 10, true)  
-	
 	Print "##################################### CREATE HOME SCREEN #####################################"
+	
+	sectionList = CreateObject("roArray", 10, true)
 	
 	if server <> invalid AND server <> "" then
 		print "Configured Server: ";server
@@ -40,7 +40,6 @@ Function showHomeScreen(screen, server) As Integer
 	sectionList.Push(prefs)
 	
     screen.SetContentList(sectionList)
-	
     screen.Show()
 	
     while true
@@ -49,25 +48,42 @@ Function showHomeScreen(screen, server) As Integer
             if msg.isListItemSelected() then
                 section = sectionList[msg.GetIndex()]
 				if section.key = "prefs" then
-					Preferences(screen)  
+					screen.Close()
+					Preferences() 
+					' exit so we don't hit the close
+					exit while
 				else
+					screen.Close()
 					showGridScreen(section)
+					' exit so we don't hit the close
+					exit while
 				end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE HOME SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                return -1
+                exit while
             end if
         end if
     end while
+	
+	return 0
 End Function
 
-Function Preferences(homeScreen)
+Function Preferences()
 	port = CreateObject("roMessagePort") 
 	dialog = CreateObject("roMessageDialog") 
 	dialog.SetMessagePort(port)
 	dialog.SetMenuTopLeft(true)
 	dialog.EnableBackButton(false)
-	dialog.SetTitle("Preferences")
+	
+	manifest = ReadAsciiFile("pkg:/manifest")
+    lines = manifest.Tokenize(chr(10))
+    aa = {}
+    for each line in lines
+        entry = line.Tokenize("=")
+        aa.AddReplace(entry[0],entry[1])
+    end for
+
+	dialog.SetTitle("Preferences v."+aa["version"])
 	dialog.AddButton(1, "Plex Media Servers")
 	dialog.AddButton(4, "Close Preferences")
 	dialog.Show()
@@ -75,16 +91,11 @@ Function Preferences(homeScreen)
 		msg = wait(0, dialog.GetMessagePort()) 
 		if type(msg) = "roMessageDialogEvent"
 			if msg.isScreenClosed() then
-				dialog.close()
-				exit while
+				LaunchHomeScreen()
 			else if msg.isButtonPressed() then
 				if msg.getIndex() = 1 then
 					ConfigureMediaServers()
         			dialog.close()
-    				homeScreen.Close()
-    				screen=preShowHomeScreen()
-					myServer = RegRead("server", "preference")
-    				showHomeScreen(screen, myServer)
         		else if msg.getIndex() = 4 then
         			dialog.close()
         		end if
@@ -104,7 +115,7 @@ Function ConfigureMediaServers()
 	
 	dialog.AddButton(1, "Close manage servers dialog")
 	dialog.AddButton(2, "Add server manually")
-	dialog.AddButton(4, "Remove Server")
+	dialog.AddButton(3, "Remove Server")
 		
 	dialog.Show()
 	while true 
@@ -112,6 +123,7 @@ Function ConfigureMediaServers()
 		if type(msg) = "roMessageDialogEvent"
 			if msg.isScreenClosed() then
 				'print "Manage server closed event"
+				LaunchHomeScreen()
 				dialog.close()
 				exit while
 			else if msg.isButtonPressed() then
@@ -119,18 +131,16 @@ Function ConfigureMediaServers()
 					'print "Closing dialog"
 				else if msg.getIndex() = 2 then
 					address = AddServerManually()
-					'print "Returned from add server manually: ";address
-					RegWrite("server", "http://"+address+":32400", "preference")
-					
-					myServer = RegRead("server", "preference")
-					
-    				screen=preShowHomeScreen()
-    				showHomeScreen(screen, myServer)
-        		else if msg.getIndex() = 4 then
+					print "Returned from add server manually: ";address
+					if address <> invalid then
+						RegWrite("server", "http://"+address+":32400", "preference")
+					end if
+        		else if msg.getIndex() = 3 then
         			RegWrite("server", "", "preference")
 					myServer = RegRead("server", "preference")
         		end if
         		dialog.close()
+				exit while
 			end if 
 		end if
 	end while
@@ -152,12 +162,20 @@ Function AddServerManually()
 			if msg.isScreenClosed() then
 				'print "Exiting keyboard dialog screen"
 			   	return invalid
+				exit while
 			else if msg.isButtonPressed() then
 				if msg.getIndex() = 1 then
 					return keyb.GetText()
        			end if
        			return invalid
+				exit while
 			end if 
 		end if
 	end while
+End Function
+
+Function LaunchHomeScreen()
+	myServer = RegRead("server", "preference")
+	screen=preShowHomeScreen()
+	showHomeScreen(screen, myServer)
 End Function
