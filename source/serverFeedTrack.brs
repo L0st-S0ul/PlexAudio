@@ -57,7 +57,7 @@ Function load_track_feed(conn As Object) As Dynamic
     directories = xml.GetChildElements()
     'print "number of directories: " + itostr(directories.Count())
     for each e in directories 
-        o = ParseTrackNode(conn.BaseURL, e)
+        o = ParseTrackNode(conn.BaseURL, e, xml)
 		TrackFeed.Push(o)
     next
     'Dbg("XML Loading: ", m.Timer)
@@ -65,7 +65,7 @@ Function load_track_feed(conn As Object) As Dynamic
 	return TrackFeed
 End Function
 
-Function ParseTrackNode(BaseURL, xml As Object) As dynamic
+Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
     o = CreateObject("roAssociativeArray")
 
     'print "ParseTrackNode: " + xml.GetName()
@@ -76,6 +76,21 @@ Function ParseTrackNode(BaseURL, xml As Object) As dynamic
     if xml.GetName() = "Track" then	
 		o.ContentType = "audio"
 		o.Title = xml@title
+		if parentxml@grandparentTitle <> invalid then
+			o.Artist = parentxml@grandparentTitle
+		else
+			o.AlbumYear = "Untitled"
+		end if
+		if parentxml@parentTitle <> invalid then
+			o.Album = parentxml@parentTitle
+		else
+			o.AlbumYear = "Album Unknown"
+		end if
+		if parentxml@parentYear <> invalid then
+			o.AlbumYear = parentxml@parentYear
+		else
+			o.AlbumYear = "Unknown"
+		end if
 		if xml@originalTitle <> invalid then
 			if len(xml@originalTitle) > 180 then
 				o.Description = left(xml@originalTitle, 180)+"..."
@@ -109,9 +124,19 @@ Function ParseTrackNode(BaseURL, xml As Object) As dynamic
 				Parts = element.GetChildElements()
 				part = Parts[0]
 				o.Key = part@key
+				o.Codec = aCodec
 				o.feedurl = BaseURL + part@key
-				o.SDPosterURL = "file://pkg:/images/track-fanart.jpg"
-				o.HDPosterURL = "file://pkg:/images/track-fanart.jpg"
+				o.Duration = element@duration
+				if xml@thumb <> invalid then
+					o.SDPosterURL = BaseURL + xml@thumb
+					o.HDPosterURL = BaseURL + xml@thumb
+				else if parentxml@thumb <> invalid then
+					o.SDPosterURL = BaseURL + parentxml@thumb
+					o.HDPosterURL = BaseURL + parentxml@thumb
+				else
+					o.SDPosterURL = "file://pkg:/images/track-fanart.jpg"
+					o.HDPosterURL = "file://pkg:/images/track-fanart.jpg"
+				end if
 			else
 				o.SDPosterURL = "file://pkg:/images/track-na.jpg"
 				o.HDPosterURL = "file://pkg:/images/track-na.jpg"

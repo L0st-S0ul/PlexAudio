@@ -79,11 +79,12 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
     o.HDPosterUrl = picture
     o.SDPosterUrl = picture
     o.Title = song.shortdescriptionline1
-    o.Description = song.shortdescriptionline2
+	o.Description = song.shortdescriptionline2
+	o.Length = song.Length
     o.contenttype = "episode"
 	
     if (song.artist > "")
-        o.Description = o.Description + chr(10) + "by: " + song.artist
+        o.Description = "Album: " + song.Album + chr(10) + "Artist: " + song.artist + chr(10) + "Year: " + song.year
     end if
 	
     scr = create_springboard(Audio.port, prevLoc)
@@ -162,28 +163,24 @@ Function CreateMp3SongList( songContent, albumTitle ) as Object
     aa.posteritems = CreateObject("roArray", songContent.count(), true)
     
 	for each song in songContent
-		a = CreateSong( song.Title, albumTitle, "artist", "mp3", song.feedurl, song.HDPosterURL)
+		a = CreateSong( song.Title, albumTitle, song.Artist, song.Album, song.AlbumYear, song.Codec, song.feedurl, song.HDPosterURL, song.Duration)
 		aa.posteritems.push(a)
 	next
 	
     return aa
 End Function
 
-Function CreatePosterItem(id as string, desc1 as string, desc2 as string) as Object
-    item = CreateObject("roAssociativeArray")
-    item.ShortDescriptionLine1 = desc1
-    item.ShortDescriptionLine2 = desc2
-    item.HDPosterUrl = "pkg:/images/" + id + "/Poster_Logo_HD.png"
-    item.SDPosterUrl = item.HDPosterUrl
-    return item
-end Function
-
-Function CreateSong(title as string, description as string, artist as string, streamformat as string, feedurl as string, imagelocation as string) as Object
-    item = CreatePosterItem("", title, description)
+Function CreateSong(title as string, description as string, artist as string, album as string, Year as string, streamformat as string, feedurl as string, imagelocation as string, duration) as Object
+	item = CreateObject("roAssociativeArray")
+	item.ShortDescriptionLine1 = title
+    item.ShortDescriptionLine2 = description
     item.HDPosterUrl = imagelocation
     item.SDPosterUrl = imagelocation
     item.Artist = artist
+	item.Album = album
+	item.Year = year
     item.Title = title    ' Song name
+	item.Length = int(val(duration)/1000)
     item.feedurl = feedurl
     item.streamformat = streamformat
     item.picture = item.HDPosterUrl      ' default audioscreen picture to PosterScreen Image
