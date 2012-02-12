@@ -9,7 +9,7 @@ Function showGridScreen(content) As Integer
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
 	
-	Print "##################################### CREATE GRID SCREEN #####################################"
+	Print "##################################### CREATE INITIAL GRID SCREEN #####################################"
 	m.port = CreateObject("roMessagePort")
     grid = CreateObject("roGridScreen")
 	grid.SetMessagePort(m.port)
@@ -56,7 +56,7 @@ Function showGridScreen(content) As Integer
 	originalGrid = CreateGridStorage(content, myServer, m.DirectoryNames, contentArray)
 	
 	while true
-        msg = wait(1, m.port)
+        msg = wait(0, m.port)
 		
         if type(msg) = "roGridScreenEvent" then
             if msg.isListItemSelected() then
@@ -68,22 +68,17 @@ Function showGridScreen(content) As Integer
 					
 					contentSelected = contentArray[row][selection]
 					contentType = contentSelected.ContentType
+					
 					cType = contentSelected.Type
-					Print "contentType: " + cType
-					' play media
 					if cType = "album" then
-						' Close the grid, we will have to recreate it...
-						grid.Close()
-						displayPosterScreen(contentSelected, originalGrid, selectedItem)
+						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
 					else if cType = "artist" then
-						' Close the grid, we will have to recreate it...
-						grid.Close()
-						displayPosterScreen(contentSelected, originalGrid, selectedItem)
+						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
 					end if
 				end if
             else if msg.isScreenClosed() then
-				Print "prepare to close gridscreen: " + currentTitle
-				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE INITIAL GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+				Print "closed gridscreen: " + currentTitle
                 return -1
             end if
 		else
@@ -155,7 +150,7 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 	Print "### TIMER - TOTAL GRID RELOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
 		
 	while true
-        msg = wait(1, m.port)
+        msg = wait(0, m.port)
 		
         if type(msg) = "roGridScreenEvent" then
             if msg.isListItemSelected() then
@@ -169,25 +164,19 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 					contentType = contentSelected.ContentType
 
 					cType = contentSelected.Type
-					Print "contentType: " + cType
-					' play media
 					if cType = "album" then
-						' Close the grid, we will have to recreate it...
-						grid.Close()
-						displayPosterScreen(contentSelected, originalGrid, selectedItem)
+						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
 					else if cType = "artist" then
-						' Close the grid, we will have to recreate it...
-						grid.Close()
-						displayPosterScreen(contentSelected, originalGrid, selectedItem)
+						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
 					end if
 				end if
             else if msg.isScreenClosed() then
-				Print "prepare to close gridscreen: " + currentTitle
-				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE RECREATED GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"	
+				Print "closed gridscreen: " + currentTitle
                 return -1
             end if
 		else
-			'print "Unknown event: ";msg
+			print "Unknown event: ";msg
         end if
     end while
 	return 0
@@ -239,7 +228,10 @@ Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) 
 	return myRowCount
 End Function
 
-Function displayPosterScreen(contentList, originalSource, selectedItem)
+Function displayPosterScreen(activeGrid, contentList, originalSource, selectedItem)
+	' Close the active grid, we will have to recreate it...
+	activeGrid.Close()
+	Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE ACTIVE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	showPosterScreen(contentList, originalSource, selectedItem)
 End Function
 

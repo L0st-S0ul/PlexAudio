@@ -51,11 +51,12 @@ Function showPosterScreen(content, originalSource, selectedItem) As Integer
                 	showNextPosterScreen(currentTitle, selected)
                 end if
             else if msg.isScreenClosed() then
+				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE POSTER SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 				' if we are going back to the grid then recreate it to get around the display "bug"
 				if type(originalSource) = "roAssociativeArray" then
 					recreateGridScreen(originalSource, selectedItem)
 				end if
-				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE POSTER SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+				
                 return -1
             end if
         end if
@@ -69,16 +70,12 @@ Function showNextPosterScreen(currentTitle, selected As Object) As Dynamic
     return 0
 End Function
 
-Function displaySpringboardScreen(currentTitle, contentList, index)
-	selected = contentList[index]
-	screen = preShowSpringboardScreen(selected, currentTitle, "")
-	showSpringboardScreen(screen, contentList, index)
-End Function
-
 Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
     Audio = AudioInit()
     picture = song.HDPosterUrl
 
+	Print "##################################### CREATE AUDIO DETAIL SCREEN #####################################"
+	
     o = CreateObject("roAssociativeArray")
     o.HDPosterUrl = picture
     o.SDPosterUrl = picture
@@ -99,7 +96,7 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
     scr.Show()
 
     ' start playing
-    print "Staring Song Playback:";song.feedurl
+    print "Starting Song Playback:";song.feedurl
     Audio.setupSong(song.feedurl, song.streamformat)
     Audio.audioplayer.setNext(0)
     Audio.setPlayState(2)		' start playing
@@ -132,7 +129,7 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
             end if
         else if type(msg) = "roSpringboardScreenEvent" then	' event from user
             if msg.isScreenClosed()
-                print "Show_Audio_Screen: screen close - return"
+				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE AUDIO DETAIL SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
                 Audio.setPlayState(0)
                 return -1
             end if

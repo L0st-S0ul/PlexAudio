@@ -15,6 +15,8 @@ End Function
 Function showHomeScreen(screen, server) As Integer
 	sectionList = CreateObject("roArray", 10, true)  
 	
+	Print "##################################### CREATE HOME SCREEN #####################################"
+	
 	if server <> invalid AND server <> "" then
 		print "Configured Server: ";server
 		initDirectoryList(server, "")
@@ -50,6 +52,7 @@ Function showHomeScreen(screen, server) As Integer
                 'print "section selected ";section.Title
                 displaySection(section, screen)
             else if msg.isScreenClosed() then
+				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE HOME SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
                 return -1
             end if
         end if
