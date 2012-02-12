@@ -1,0 +1,5 @@
+This is a simple ROKU client for the PLEX media server that can 
+connect to audio folders and stream WMA and MP3 media. Any 
+file not supported will be shown with an exclamation point
+in the app. 
+
