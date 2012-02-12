@@ -205,9 +205,44 @@ Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as strin
             else if msg.isListItemSelected() then
                 print "playback started"
             else if msg.isRequestSucceeded()
-                print "ending song:"; msg.GetIndex()
-                Audio.setPlayState(0)	' stop the player, wait for user input
-                scr.ReloadButtons(0)    ' set button to allow play start
+                print "Ending song: "; msg.GetIndex()
+				
+				currentSelect = currentSelect + 1
+				if currentSelect = totalSongs then
+					currentSelect = 0
+				end if
+				print "Going to next song: ";currentSelect
+				
+				Audio.setPlayState(0)
+				Audio.audioplayer.setNext(currentSelect)
+				
+				picture = songs[currentSelect].HDPosterUrl
+				o = CreateObject("roAssociativeArray")
+				o.HDPosterUrl = picture
+				o.SDPosterUrl = picture
+				o.Title = songs[currentSelect].shortdescriptionline1
+				o.Description = songs[currentSelect].shortdescriptionline2
+				o.Length = songs[currentSelect].Length
+				o.contenttype = "episode"
+				
+				print "Going to next song: ";o.Title
+				
+				if (songs[currentSelect].artist > "")
+					o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+				end if
+				
+				scr = create_springboard(Audio.port, prevLoc)
+				scr.ReloadButtons(2) 'set buttons for state "playing"
+				scr.screen.SetTitle("Screen Title")
+
+				' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
+				scr.screen.SetContent(o)
+				scr.Show()
+				
+				newstate = 2
+				
+				Audio.setPlayState(newstate)
+				scr.ReloadButtons(newstate)
             else if msg.isRequestFailed()
                 print "failed to play song:"; msg.GetData()
             else if msg.isFullResult()
