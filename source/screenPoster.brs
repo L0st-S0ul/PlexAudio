@@ -1,17 +1,22 @@
 '* Displays the content in a poster screen. Can be any content type.
-
-Function preShowPosterScreen() As Object
-    port=CreateObject("roMessagePort")
+Function showPosterScreen(content, originalSource, selectedItem) As Integer
+	retrieving = CreateObject("roOneLineDialog")
+	retrieving.SetTitle("Retrieving ...")
+	retrieving.ShowBusyAnimation()
+	retrieving.Show()
+	
+	Print "##################################### CREATE POSTER SCREEN #####################################"
+	
+	port=CreateObject("roMessagePort")
     screen = CreateObject("roPosterScreen")
     screen.SetMessagePort(port)
     screen.SetListStyle("arced-square")
     screen.setListDisplayMode("scale-to-fit")
-    return screen
-End Function
-
-Function showPosterScreen(screen, content, originalSource, selectedItem) As Integer
+	
 	print "show poster screen for key ";content.key
 	screen.Show()
+	retrieving.Close()
+	
 	server = content.server
 	
 	contentKey = content.key
@@ -46,12 +51,11 @@ Function showPosterScreen(screen, content, originalSource, selectedItem) As Inte
                 	showNextPosterScreen(currentTitle, selected)
                 end if
             else if msg.isScreenClosed() then
-				' if we are going back to the grid then recreate it to get around the 
-				' display "bug"
+				' if we are going back to the grid then recreate it to get around the display "bug"
 				if type(originalSource) = "roAssociativeArray" then
-					grid = preShowGridScreen()
 					recreateGridScreen(originalSource, selectedItem)
 				end if
+				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE POSTER SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
                 return -1
             end if
         end if
@@ -61,8 +65,7 @@ End Function
 
 Function showNextPosterScreen(currentTitle, selected As Object) As Dynamic
     if validateParam(selected, "roAssociativeArray", "showNextPosterScreen") = false return -1
-    screen = preShowPosterScreen()
-    showPosterScreen(screen, selected, "", "")
+    showPosterScreen(selected, "", "")
     return 0
 End Function
 

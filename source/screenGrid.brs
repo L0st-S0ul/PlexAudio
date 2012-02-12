@@ -1,7 +1,14 @@
-'*
-'* Initial attempt at a grid screen. 
-'*
-Function preShowGridScreen() As Object
+Function showGridScreen(content) As Integer
+    if validateParam(content, "roAssociativeArray", "showGridScreen") = false return -1			
+
+	retrieving = CreateObject("roOneLineDialog")
+	retrieving.SetTitle("Retrieving ...")
+	retrieving.ShowBusyAnimation()
+	retrieving.Show()
+	
+	totalTimer = CreateObject("roTimespan")
+	totalTimer.Mark()
+	
 	Print "##################################### CREATE GRID SCREEN #####################################"
 	m.port = CreateObject("roMessagePort")
     grid = CreateObject("roGridScreen")
@@ -9,16 +16,6 @@ Function preShowGridScreen() As Object
 		
     grid.SetDisplayMode("scale-to-fit")
 	grid.SetUpBehaviorAtTopRow("exit")
-	
-    return grid
-End Function
-
-Function showGridScreen(grid, content) As Integer
-	if validateParam(grid, "roGridScreen", "showGridScreen") = false return -1
-    if validateParam(content, "roAssociativeArray", "showGridScreen") = false return -1			
-
-	totalTimer = CreateObject("roTimespan")
-	totalTimer.Mark()
 	
 	performanceTimer = CreateObject("roTimespan")
 	
@@ -40,7 +37,8 @@ Function showGridScreen(grid, content) As Integer
 	
 	' Show the grid...
 	grid.Show()
-			
+	retrieving.Close()
+	
 	keyCount = m.DirectoryNames.Count()
 	contentArray = []
 	rowCount = 0	
@@ -101,9 +99,15 @@ Function showGridScreen(grid, content) As Integer
 End Function
 
 Function recreateGridScreen(originalGrid, originalSelection) As Integer	
+	retrieving = CreateObject("roOneLineDialog")
+	retrieving.SetTitle("Retrieving ...")
+	retrieving.ShowBusyAnimation()
+	retrieving.Show()
+	
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
 	
+	Print "##################################### RECREATE GRID SCREEN #####################################"
 	m.port = CreateObject("roMessagePort")
     grid = CreateObject("roGridScreen")
 	grid.SetMessagePort(m.port)
@@ -129,6 +133,7 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 	
 	' Show the grid...
 	grid.Show()
+	retrieving.Close()
 	
 	keyCount = directoryNames.Count()
 	rowCount = 0	
@@ -136,6 +141,12 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 	performanceTimer.Mark()
 	for each items in directoryNames
 		grid.setContentList(rowCount, contentArray[rowCount])
+		
+		' This app only showing top 2 rows for now...
+		if rowCount > 2
+			grid.setListVisible(rowCount, false)
+		end if
+		
 		rowCount = rowCount + 1
 	next
 		
@@ -229,13 +240,11 @@ Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) 
 End Function
 
 Function displayPosterScreen(contentList, originalSource, selectedItem)
-	screen = preShowPosterScreen()
-	showPosterScreen(screen, contentList, originalSource, selectedItem)
+	showPosterScreen(contentList, originalSource, selectedItem)
 End Function
 
 Function showNextGridScreen(currentTitle, selected As Object) As Dynamic
     if validateParam(selected, "roAssociativeArray", "showNextGridScreen") = false return -1
-    grid = preShowGridScreen()
-    showGridScreen(grid, selected)
+    showGridScreen(selected)
     return 0
 End Function
