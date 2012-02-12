@@ -13,6 +13,9 @@ Function preShowHomeScreen() As Object
 End Function
 
 Function showHomeScreen(screen, server) As Integer
+    screenFacade = CreateObject("roPosterScreen")
+    screenFacade.show()
+	
 	Print "##################################### CREATE HOME SCREEN #####################################"
 	
 	sectionList = CreateObject("roArray", 10, true)
@@ -50,16 +53,19 @@ Function showHomeScreen(screen, server) As Integer
 				if section.key = "prefs" then
 					screen.Close()
 					Preferences() 
+					screenFacade.Close()
 					' exit so we don't hit the close
 					exit while
 				else
 					screen.Close()
 					showGridScreen(section)
+					screenFacade.Close()
 					' exit so we don't hit the close
 					exit while
 				end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE HOME SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+				screenFacade.Close()
                 exit while
             end if
         end if

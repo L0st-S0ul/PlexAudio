@@ -3,19 +3,8 @@
 ' ********************************************************************
 
 Sub Main()
-    screenFacade = CreateObject("roPosterScreen")
-    screenFacade.show()
-	
-    initTheme()
-
-    screen=preShowHomeScreen()
-    if screen=invalid then
-        print "unexpected error in preShowHomeScreen"
-        return
-    end if
-	
-	myServer = RegRead("server", "preference")
-    showHomeScreen(screen, myServer)
+	initTheme()
+	LaunchHomeScreen()
 End Sub
 
 

@@ -1,10 +1,8 @@
 Function showGridScreen(content) As Integer
     if validateParam(content, "roAssociativeArray", "showGridScreen") = false return -1			
 	
-	retrieving = CreateObject("roOneLineDialog")
-	retrieving.SetTitle("Retrieving ...")
-	retrieving.ShowBusyAnimation()
-	retrieving.Show()
+	screenFacade = CreateObject("roPosterScreen")
+    screenFacade.show()
 	
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
@@ -37,7 +35,7 @@ Function showGridScreen(content) As Integer
 	
 	' Show the grid...
 	grid.Show()
-	retrieving.Close()
+	screenFacade.Close()
 	
 	keyCount = m.DirectoryNames.Count()
 	contentArray = []
@@ -130,10 +128,8 @@ Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) 
 End Function
 
 Function recreateGridScreen(originalGrid, originalSelection) As Integer	
-	retrieving = CreateObject("roOneLineDialog")
-	retrieving.SetTitle("Retrieving ...")
-	retrieving.ShowBusyAnimation()
-	retrieving.Show()
+	screenFacade = CreateObject("roPosterScreen")
+    screenFacade.show()
 	
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
@@ -164,7 +160,7 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 	
 	' Show the regrid...
 	regrid.Show()
-	retrieving.Close()
+	screenFacade.Close()
 	
 	keyCount = directoryNames.Count()
 	rowCount = 0	

@@ -1,11 +1,10 @@
 '* Displays the content in a poster screen. Can be any content type.
-Function showPosterScreen(content, originalSource, selectedItem) As Integer
+Function showPosterScreen(content, originalSource, selectedItem) As Integer	
+	Print "##################################### CREATE POSTER SCREEN #####################################"
 	retrieving = CreateObject("roOneLineDialog")
 	retrieving.SetTitle("Retrieving ...")
 	retrieving.ShowBusyAnimation()
 	retrieving.Show()
-	
-	Print "##################################### CREATE POSTER SCREEN #####################################"
 	
 	port=CreateObject("roMessagePort")
     screen = CreateObject("roPosterScreen")
