@@ -111,7 +111,7 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
                     print "end of playlist (obsolete status msg event)"
                 end if
             else if msg.isListItemSelected() then
-                print "starting song:"; msg.GetIndex()
+                print "playback started"
             else if msg.isRequestSucceeded()
                 print "ending song:"; msg.GetIndex()
                 audio.setPlayState(0)	' stop the player, wait for user input
@@ -124,8 +124,6 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
                 print "Paused"
             else if msg.isResumed()
                 print "Resumed"
-            else
-                print "ignored event type:"; msg.GetData()
             end if
         else if type(msg) = "roSpringboardScreenEvent" then	' event from user
             if msg.isScreenClosed()

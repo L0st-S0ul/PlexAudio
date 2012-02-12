@@ -47,25 +47,18 @@ Function showHomeScreen(screen, server) As Integer
         msg = wait(0, screen.GetMessagePort())
         if type(msg) = "roPosterScreenEvent" then
             if msg.isListItemSelected() then
-                'print "list item selected | index = "; msg.GetIndex()
                 section = sectionList[msg.GetIndex()]
-                'print "section selected ";section.Title
-                displaySection(section, screen)
+				if section.key = "prefs" then
+					Preferences(screen)  
+				else
+					showGridScreen(section)
+				end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE HOME SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
                 return -1
             end if
         end if
     end while
-End Function
-
-Function displaySection(section As Object, homeScreen As Object) As Dynamic   
-    if section.key = "prefs" then
-    	Preferences(homeScreen)  
-    else
-    	showGridScreen(section)
-    end if
-    return 0
 End Function
 
 Function Preferences(homeScreen)
