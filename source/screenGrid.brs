@@ -41,7 +41,7 @@ Function showGridScreen(content) As Integer
 	
 	keyCount = m.DirectoryNames.Count()
 	contentArray = []
-	rowCount = 0	
+	rowCount = 0
 	
 	performanceTimer.Mark()
 	rowCount = loadNextRow(grid, contentKey, m.Directories[rowCount], contentArray, rowCount)
@@ -52,11 +52,13 @@ Function showGridScreen(content) As Integer
 	
 	Print "### TIMER - ROW LOADER -- row took: " + itostr(performanceTimer.TotalMilliseconds())
 	Print "### TIMER - TOTAL INITIAL GRID LOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
-	
+
 	originalGrid = CreateGridStorage(content, myServer, m.DirectoryNames, contentArray)
 	
+	showCount = rowCount
+	
 	while true
-        msg = wait(0, m.port)
+        msg = wait(1, m.port)
 		
         if type(msg) = "roGridScreenEvent" then
             if msg.isListItemSelected() then
@@ -78,19 +80,53 @@ Function showGridScreen(content) As Integer
 				end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE INITIAL GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-				Print "closed gridscreen: " + currentTitle
-                return -1
+				Print "closed initial gridscreen: " + currentTitle
+                return 0
             end if
 		else
-			'print "Unknown event: ";msg
+			print "Unknown grid event: ";msg
         end if
 		
-		if rowCount < keyCount
-			grid.setListVisible(rowCount, false)
-			rowCount = rowCount + 1
+		' This app only showing top 2 rows for now...
+		' so force them out of view...
+		if showCount < keyCount then
+			if showCount > 1 then
+				grid.setListVisible(rowCount, false)
+			end if
+			showCount = showCount + 1
 		end if
     end while
 	return 0
+End Function
+
+Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) as Integer
+	performanceTimer = CreateObject("roTimespan")
+	
+	performanceTimer.Mark()
+	
+	myServer = RegRead("server", "preference")
+	myConn = InitDirectoryFeedConnection(myServer, contentKey+"/"+myContent.key)
+	myDirectories = myConn.LoadDirectoryFeed(myConn)
+	Print "### TIMER - PAGE CONTENT TIMER -- Getting Row Content took: " + itostr(performanceTimer.TotalMilliseconds())
+	
+	myContentArray[myRowCount] = []
+	
+	performanceTimer.Mark()
+	itemCount = 0
+	for each item in myDirectories
+		myContentArray[myRowCount][itemCount] = item
+		itemCount = itemCount + 1
+	next
+
+	if itemCount > 0 then
+		myGrid.setContentList(myRowCount, myContentArray[myRowCount])
+	else
+		myGrid.setListVisible(myRowCount, false)
+	end if
+	
+	myRowCount = myRowCount + 1
+	
+	return myRowCount
 End Function
 
 Function recreateGridScreen(originalGrid, originalSelection) As Integer	
@@ -138,10 +174,9 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 		grid.setContentList(rowCount, contentArray[rowCount])
 		
 		' This app only showing top 2 rows for now...
-		if rowCount > 2
+		if rowCount > 1
 			grid.setListVisible(rowCount, false)
 		end if
-		
 		rowCount = rowCount + 1
 	next
 		
@@ -172,11 +207,11 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 				end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE RECREATED GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"	
-				Print "closed gridscreen: " + currentTitle
-                return -1
+				Print "closed recreated gridscreen: " + currentTitle
+                return 0
             end if
 		else
-			print "Unknown event: ";msg
+			print "Unknown recreated grid event: ";msg
         end if
     end while
 	return 0
@@ -198,45 +233,9 @@ Function CreateGridStorage(oringinalContent, originalServer, originalDirectoryNa
     return item
 end Function
 
-Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) as Integer
-	performanceTimer = CreateObject("roTimespan")
-	
-	performanceTimer.Mark()
-	
-	myServer = RegRead("server", "preference")
-	myConn = InitDirectoryFeedConnection(myServer, contentKey+"/"+myContent.key)
-	myDirectories = myConn.LoadDirectoryFeed(myConn)
-	Print "### TIMER - PAGE CONTENT TIMER -- Getting Row Content took: " + itostr(performanceTimer.TotalMilliseconds())
-	
-	myContentArray[myRowCount] = []
-	
-	performanceTimer.Mark()
-	itemCount = 0
-	for each item in myDirectories
-		myContentArray[myRowCount][itemCount] = item
-		itemCount = itemCount + 1
-	next
-
-	if itemCount > 0 then
-		myGrid.setContentList(myRowCount, myContentArray[myRowCount])
-	else
-		myGrid.setListVisible(myRowCount, false)
-	end if
-	
-	myRowCount = myRowCount + 1
-	
-	return myRowCount
-End Function
-
 Function displayPosterScreen(activeGrid, contentList, originalSource, selectedItem)
 	' Close the active grid, we will have to recreate it...
 	activeGrid.Close()
-	Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE ACTIVE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SHOULD HAVE CLOSED ACTIVE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	showPosterScreen(contentList, originalSource, selectedItem)
-End Function
-
-Function showNextGridScreen(currentTitle, selected As Object) As Dynamic
-    if validateParam(selected, "roAssociativeArray", "showNextGridScreen") = false return -1
-    showGridScreen(selected)
-    return 0
 End Function
