@@ -109,8 +109,9 @@ Function ParseDirectoryNode(BaseURL, xml As Object) As dynamic
         o.Key = xml@key
 		
 		if xml@thumb <> invalid then
-			o.SDPosterURL = BaseURL + xml@thumb
-			o.HDPosterURL = BaseURL + xml@thumb
+			o.SDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+xml@thumb, "124", "112")
+			o.HDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+xml@thumb, "188", "188")
+			'print "Directory Feed Url: ";o.HDPosterURL 
 		else if xml@type = "artist" then
 			'o.SDPosterURL = BaseURL + xml@art
 			'o.HDPosterURL = BaseURL + xml@art

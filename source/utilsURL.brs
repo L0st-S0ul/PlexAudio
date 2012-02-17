@@ -4,6 +4,16 @@
 '**  Copyright (c) 2009 Roku Inc. All Rights Reserved.
 '**********************************************************
 
+REM Constructs an url that will return a better image for viewing from plex
+Function CreateServerImageResizeLocation(baseurl as String, imageurl as String, newwidth as String, newheight as String) as String
+	' We don't need the unique number for the transcode, plex will actually barf on it.
+	questionLocation = instr(1,imageurl,"?")
+	if questionLocation <> 0 then
+		imageurl = Mid(imageurl, 1, questionLocation-1)
+	end if
+	return baseurl+"/photo/:/transcode?url="+imageurl+"&width="+newwidth+"&height="+newheight
+End Function
+
 REM ******************************************************
 REM Constucts a URL Transfer object
 REM ******************************************************

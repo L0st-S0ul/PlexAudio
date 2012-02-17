@@ -138,15 +138,16 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
 				o.feedurl = BaseURL + part@key
 				o.Duration = element@duration
 				if xml@thumb <> invalid then
-					o.SDPosterURL = BaseURL + xml@thumb
-					o.HDPosterURL = BaseURL + xml@thumb
+					o.SDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+xml@thumb, "124", "112")
+					o.HDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+xml@thumb, "188", "188")
 				else if parentxml@thumb <> invalid then
-					o.SDPosterURL = BaseURL + parentxml@thumb
-					o.HDPosterURL = BaseURL + parentxml@thumb
+					o.SDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+parentxml@thumb, "124", "112")
+					o.HDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+parentxml@thumb, "188", "188")
 				else
 					o.SDPosterURL = "file://pkg:/images/track-fanart.jpg"
 					o.HDPosterURL = "file://pkg:/images/track-fanart.jpg"
 				end if
+				'print "Track Url: ";o.HDPosterURL 
 			else
 				o.SDPosterURL = "file://pkg:/images/track-na.jpg"
 				o.HDPosterURL = "file://pkg:/images/track-na.jpg"

@@ -3,6 +3,7 @@
 ' ********************************************************************
 
 Sub Main()
+	'SetMainAppIsRunning() 'if setting screensaver
 	initTheme()
 	LaunchHomeScreen()
 End Sub

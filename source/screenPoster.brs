@@ -81,18 +81,22 @@ Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
     o.Title = song.shortdescriptionline1
 	o.Description = song.shortdescriptionline2
 	o.Length = song.Length
-    o.contenttype = "episode"
-	
-    if (song.artist > "")
-        o.Description = "Album: " + song.Album + chr(10) + "Artist: " + song.artist + chr(10) + "Year: " + song.year
+    o.contenttype = "audio"
+	if (song.artist <> invalid)
+		o.Artist = song.artist
+	end if
+    if (song.Album <> invalid)
+        o.Album = song.Album
     end if
 	
     scr = create_springboard(Audio.port, prevLoc)
-    scr.ReloadButtons(2) 'set buttons for state "playing"
-    scr.screen.SetTitle("Screen Title")
-
-    ' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
+    
+	'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
+	scr.ReloadButtons(2) 'set buttons for state "playing"
+	scr.screen.SetDescriptionStyle("audio")
+	scr.screen.SetProgressIndicatorEnabled(true)
     scr.screen.SetContent(o)
+	
     scr.Show()
 
     ' start playing
@@ -170,18 +174,21 @@ Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as strin
     o.Title = songs[currentSelect].shortdescriptionline1
 	o.Description = songs[currentSelect].shortdescriptionline2
 	o.Length = songs[currentSelect].Length
-    o.contenttype = "episode"
-	
-    if (songs[currentSelect].artist > "")
-        o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+    o.contenttype = "audio"
+	if (songs[currentSelect].artist <> invalid)
+		o.Artist = songs[currentSelect].artist
+	end if
+    if (songs[currentSelect].Album <> invalid)
+        o.Album = songs[currentSelect].Album
     end if
-	
-    scr = create_springboard(Audio.port, prevLoc)
-    scr.ReloadButtons(2) 'set buttons for state "playing"
-    scr.screen.SetTitle("Screen Title")
 
-    ' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
-    scr.screen.SetContent(o)
+    scr = create_springboard(Audio.port, prevLoc)
+    
+	'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
+	scr.ReloadButtons(2) 'set buttons for state "playing"
+    scr.screen.SetDescriptionStyle("audio")
+	scr.screen.SetContent(o)
+		
     scr.Show()
 
     ' start playing
@@ -192,21 +199,24 @@ Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as strin
     Audio.audioplayer.setNext( currentSelect )
     Audio.setPlayState(2)		' start playing
 	Audio.audioplayer.setNext( currentSelect + 1)
-	
+		
+	isPlaying = false
     while true
-        msg = Audio.getMsgEvents(20000, "roSpringboardScreenEvent")
-
+        msg = Audio.getMsgEvents(1000, "roSpringboardScreenEvent")
+			
         if type(msg) = "roAudioPlayerEvent"  then	' event from audio player
             if msg.isStatusMessage() then
                 message = msg.getMessage()
                 if message = "end of playlist"
                     print "end of playlist (obsolete status msg event)"
                 end if
+				isPlaying = false
             else if msg.isListItemSelected() then
                 print "playback started"
+				isPlaying = true
             else if msg.isRequestSucceeded()
                 print "Ending song: "; msg.GetIndex()
-				
+				isPlaying = false
 				currentSelect = currentSelect + 1
 				if currentSelect = totalSongs then
 					currentSelect = 0
@@ -223,20 +233,21 @@ Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as strin
 				o.Title = songs[currentSelect].shortdescriptionline1
 				o.Description = songs[currentSelect].shortdescriptionline2
 				o.Length = songs[currentSelect].Length
-				o.contenttype = "episode"
+				o.contenttype = "audio"
 				
 				print "Going to next song: ";o.Title
 				
-				if (songs[currentSelect].artist > "")
-					o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+				if (songs[currentSelect].artist <> invalid)
+					o.Artist = songs[currentSelect].artist
+				end if
+				if (songs[currentSelect].Album <> invalid)
+					o.Album = songs[currentSelect].Album
 				end if
 				
-				scr = create_springboard(Audio.port, prevLoc)
+				'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
 				scr.ReloadButtons(2) 'set buttons for state "playing"
-				scr.screen.SetTitle("Screen Title")
-
-				' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
 				scr.screen.SetContent(o)
+				
 				scr.Show()
 				
 				newstate = 2
@@ -244,12 +255,16 @@ Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as strin
 				Audio.setPlayState(newstate)
 				scr.ReloadButtons(newstate)
             else if msg.isRequestFailed()
+				isPlaying = false
                 print "failed to play song:"; msg.GetData()
             else if msg.isFullResult()
+				isPlaying = false
                 print "FullResult: End of Playlist"
             else if msg.isPaused()
+				isPlaying = false
                 print "Paused"
             else if msg.isResumed()
+				isPlaying = true
                 print "Resumed"
             end if
         else if type(msg) = "roSpringboardScreenEvent" then	' event from user
@@ -293,20 +308,21 @@ Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as strin
 					o.Title = songs[currentSelect].shortdescriptionline1
 					o.Description = songs[currentSelect].shortdescriptionline2
 					o.Length = songs[currentSelect].Length
-					o.contenttype = "episode"
+					o.contenttype = "audio"
 					
 					print "Going to next song: ";o.Title
 					
-					if (songs[currentSelect].artist > "")
-						o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+					if (songs[currentSelect].artist <> invalid)
+						o.Artist = songs[currentSelect].artist
+					end if
+					if (songs[currentSelect].Album <> invalid)
+						o.Album = songs[currentSelect].Album
 					end if
 					
-					scr = create_springboard(Audio.port, prevLoc)
+					'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
 					scr.ReloadButtons(2) 'set buttons for state "playing"
-					scr.screen.SetTitle("Screen Title")
-
-					' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
 					scr.screen.SetContent(o)
+					
 					scr.Show()
 					
 					newstate = 2 
@@ -327,19 +343,21 @@ Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as strin
 					o.Title = songs[currentSelect].shortdescriptionline1
 					o.Description = songs[currentSelect].shortdescriptionline2
 					o.Length = songs[currentSelect].Length
-					o.contenttype = "episode"
+					o.contenttype = "audio"
 					
 					print "Going to previous song: ";o.Title
 					
-					if (songs[currentSelect].artist > "")
-						o.Description = "Album: " + songs[currentSelect].Album + chr(10) + "Artist: " + songs[currentSelect].artist + chr(10) + "Year: " + songs[currentSelect].year
+					if (songs[currentSelect].artist <> invalid)
+						o.Artist = songs[currentSelect].artist
+					end if
+					if (songs[currentSelect].Album <> invalid)
+						o.Album = songs[currentSelect].Album
 					end if
 					
-					scr = create_springboard(Audio.port, prevLoc)
+					'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
 					scr.ReloadButtons(2) 'set buttons for state "playing"
-					scr.screen.SetTitle("Screen Title")
-					' SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
 					scr.screen.SetContent(o)
+					
 					scr.Show()	
 					
 					newstate = 2 
