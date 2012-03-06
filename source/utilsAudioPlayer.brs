@@ -24,8 +24,8 @@ Function AudioInit() As Object
 	o.setContentList		= audioPlayer_set_content_list
 	o.getMsgEvents			= audioPlayer_getmsg
 	
-	audioPlayer			= CreateObject("roAudioPlayer")
-	o.port 				= CreateObject("roMessagePort") 'Message will be coming out when a track is done
+	audioPlayer				= CreateObject("roAudioPlayer")
+	o.port 					= CreateObject("roMessagePort") 'Message will be coming out when a track is done
 	audioPlayer.SetMessagePort(o.port)
 	o.audioPlayer			= audioPlayer
 
@@ -105,6 +105,7 @@ Function audioPlayer_getmsg(timeout as Integer, escape as String) As Object
 	    if type(msg) = escape return msg
 	    if type(msg) = "Invalid" return msg
 	    ' eat all other messages
+		Print "audio loop"
 	end while
 End Function
 

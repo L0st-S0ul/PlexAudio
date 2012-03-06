@@ -130,7 +130,7 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
 		element = Media[0]
 		if element.GetName() = "Media" then	
 			aCodec = element@audioCodec
-			if aCodec = "mp3" OR aCodec = "wmv" OR aCodec = "aac" then
+			if aCodec = "mp3" OR aCodec = "wma" or aCodec = "wmav2" OR aCodec = "aac" then
 				Parts = element.GetChildElements()
 				part = Parts[0]
 				o.Key = part@key
@@ -149,6 +149,7 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
 				end if
 				'print "Track Url: ";o.HDPosterURL 
 			else
+				o.Codec = "invalid"
 				o.SDPosterURL = "file://pkg:/images/track-na.jpg"
 				o.HDPosterURL = "file://pkg:/images/track-na.jpg"
 			end if

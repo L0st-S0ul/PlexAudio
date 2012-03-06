@@ -7,15 +7,12 @@ Function preShowHomeScreen() As Object
     port=CreateObject("roMessagePort")
     screen = CreateObject("roPosterScreen")
     screen.SetMessagePort(port)
-    screen.SetListStyle("flat-category")
-    screen.setListDisplayMode("zoom-to-fill")
+    screen.SetListStyle("arced-16x9")
+    screen.setListDisplayMode("photo-fit")
     return screen
 End Function
 
-Function showHomeScreen(screen, server) As Integer
-    screenFacade = CreateObject("roPosterScreen")
-    screenFacade.show()
-	
+Function showHomeScreen(screen, server) As Integer	
 	Print "##################################### CREATE HOME SCREEN #####################################"
 	
 	sectionList = CreateObject("roArray", 10, true)
@@ -38,10 +35,10 @@ Function showHomeScreen(screen, server) As Integer
 	prefs.Key = "prefs"
 	prefs.Title = "Preferences"
 	prefs.ShortDescriptionLine1 = "Preferences"
-	prefs.SDPosterURL = "file://pkg:/images/prefs.jpg"
-	prefs.HDPosterURL = "file://pkg:/images/prefs.jpg"
+	prefs.SDPosterURL = "file://pkg:/images/settings.png"
+	prefs.HDPosterURL = "file://pkg:/images/settings.png"
 	sectionList.Push(prefs)
-	
+
     screen.SetContentList(sectionList)
     screen.Show()
 	
@@ -53,21 +50,18 @@ Function showHomeScreen(screen, server) As Integer
 				if section.key = "prefs" then
 					screen.Close()
 					Preferences() 
-					screenFacade.Close()
-					' exit so we don't hit the close
-					exit while
+					return -1
 				else
 					screen.Close()
 					showGridScreen(section)
-					screenFacade.Close()
-					' exit so we don't hit the close
-					exit while
+					return -1
 				end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE HOME SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-				screenFacade.Close()
-                exit while
+               return -1
             end if
+		else
+			Print "homescreen"
         end if
     end while
 	
@@ -106,6 +100,8 @@ Function Preferences()
         			dialog.close()
         		end if
 			end if 
+		else
+			Print "preferences"
 		end if
 	end while
 End Function
@@ -148,6 +144,8 @@ Function ConfigureMediaServers()
         		dialog.close()
 				exit while
 			end if 
+		else
+			Print "servers"
 		end if
 	end while
 End Function
@@ -176,6 +174,8 @@ Function AddServerManually()
        			return invalid
 				exit while
 			end if 
+		else
+			Print "keyboard"
 		end if
 	end while
 End Function

@@ -113,10 +113,13 @@ Function ParseDirectoryNode(BaseURL, xml As Object) As dynamic
 			o.HDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+xml@thumb, "188", "188")
 			'print "Directory Feed Url: ";o.HDPosterURL 
 		else if xml@type = "artist" then
-			'o.SDPosterURL = BaseURL + xml@art
-			'o.HDPosterURL = BaseURL + xml@art
-			o.SDPosterURL = "file://pkg:/images/album-fanart.jpg"
-			o.HDPosterURL = "file://pkg:/images/album-fanart.jpg"
+			'if xml@art <> invalid then
+			'	o.SDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+xml@art, "110", "150")
+			'	o.HDPosterURL = CreateServerImageResizeLocation(BaseURL, BaseURL+xml@art, "210", "270")
+			'else
+				o.SDPosterURL = "file://pkg:/images/album-fanart.jpg"
+				o.HDPosterURL = "file://pkg:/images/album-fanart.jpg"
+			'end if
 		else if xml@type = "movie" then
 			'o.SDPosterURL = BaseURL + xml@art
 			'o.HDPosterURL = BaseURL + xml@art

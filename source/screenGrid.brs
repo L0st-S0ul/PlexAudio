@@ -1,9 +1,6 @@
 Function showGridScreen(content) As Integer
     if validateParam(content, "roAssociativeArray", "showGridScreen") = false return -1			
-	
-	screenFacade = CreateObject("roPosterScreen")
-    screenFacade.show()
-	
+		
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
 	
@@ -35,7 +32,6 @@ Function showGridScreen(content) As Integer
 	
 	' Show the grid...
 	grid.Show()
-	screenFacade.Close()
 	
 	keyCount = m.DirectoryNames.Count()
 	contentArray = []
@@ -54,8 +50,10 @@ Function showGridScreen(content) As Integer
 	
 	showCount = rowCount
 	
+	currentWait = 1
+	
 	while true
-        msg = wait(1, m.port)
+        msg = wait(currentWait, m.port)
 		
         if type(msg) = "roGridScreenEvent" then
             if msg.isListItemSelected() then
@@ -74,25 +72,31 @@ Function showGridScreen(content) As Integer
 					else if cType = "artist" then
 						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
 					end if
+					
+					' exit the loop
+					return -1
 				end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE INITIAL GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 				Print "closed initial gridscreen: " + currentTitle
+				
 				LaunchHomeScreen()
-                exit while
+                return -1
             end if
 		else
-			'print "Unknown grid event: ";msg
-        end if
-		
-		' This app only showing top 2 rows for now...
-		' so force them out of view...
-		if showCount < keyCount then
-			if showCount > 1 then
-				grid.setListVisible(showCount, false)
+			if currentWait = 1 then
+				' This app only showing top 2 rows for now so force them out of view...
+				if showCount < keyCount then
+					if showCount > 1 then
+						grid.setListVisible(showCount, false)
+					end if
+					showCount = showCount + 1
+				else
+					' when finished set the timer to hang on
+					currentWait = 0
+				end if
 			end if
-			showCount = showCount + 1
-		end if
+        end if
     end while
 	return 0
 End Function
@@ -127,10 +131,7 @@ Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) 
 	return myRowCount
 End Function
 
-Function recreateGridScreen(originalGrid, originalSelection) As Integer	
-	screenFacade = CreateObject("roPosterScreen")
-    screenFacade.show()
-	
+Function recreateGridScreen(originalGrid, originalSelection) As Integer		
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
 	
@@ -157,11 +158,7 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 	performanceTimer.Mark()
 	regrid.SetListNames(directoryNames)
 	Print "### TIMER - GRID TIMER -- SetListNames took: " + itostr(performanceTimer.TotalMilliseconds())
-	
-	' Show the regrid...
-	regrid.Show()
-	screenFacade.Close()
-	
+
 	keyCount = directoryNames.Count()
 	rowCount = 0	
 	
@@ -170,13 +167,16 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 		regrid.setContentList(rowCount, contentArray[rowCount])
 		
 		' This app only showing top 2 rows for now...
-		if rowCount > 1
+		if originalSelection.RowNumber = rowCount then
+			regrid.SetFocusedListItem(originalSelection.RowNumber, originalSelection.ItemNumber)
+		else if rowCount > 1 then
 			regrid.setListVisible(rowCount, false)
 		end if
 		rowCount = rowCount + 1
 	next
-		
-	regrid.SetFocusedListItem(originalSelection.RowNumber, originalSelection.ItemNumber)
+
+	' Show the regrid...
+	regrid.Show()
 	
 	Print "### TIMER - TOTAL GRID RELOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
 		
@@ -201,14 +201,16 @@ Function recreateGridScreen(originalGrid, originalSelection) As Integer
 						displayPosterScreen(regrid, contentSelected, originalGrid, selectedItem)
 					end if
 				end if
+				
+				' exit the loop
+				return -1
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE RECREATED GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"	
 				Print "closed recreated gridscreen: " + currentTitle
-				LaunchHomeScreen()
-                exit while
+				
+				LaunchHomeScreen()				
+                return -1
             end if
-		else
-			'print "Unknown recreated grid event: ";msg
         end if
     end while
 	return 0
@@ -233,6 +235,7 @@ end Function
 Function displayPosterScreen(activeGrid, contentList, originalSource, selectedItem)
 	' Close the active grid, we will have to recreate it...
 	activeGrid.Close()
+	
 	Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSED ACTIVE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	showPosterScreen(contentList, originalSource, selectedItem)
 End Function

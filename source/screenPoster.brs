@@ -1,21 +1,22 @@
 '* Displays the content in a poster screen. Can be any content type.
 Function showPosterScreen(content, originalSource, selectedItem) As Integer	
 	Print "##################################### CREATE POSTER SCREEN #####################################"
+	
 	retrieving = CreateObject("roOneLineDialog")
 	retrieving.SetTitle("Retrieving ...")
 	retrieving.ShowBusyAnimation()
 	retrieving.Show()
 	
-	port=CreateObject("roMessagePort")
+	posterPort=CreateObject("roMessagePort")
     screen = CreateObject("roPosterScreen")
-    screen.SetMessagePort(port)
+    screen.SetMessagePort(posterPort)
     screen.SetListStyle("arced-square")
     screen.setListDisplayMode("scale-to-fit")
 	
 	print "show poster screen for key ";content.key
 	screen.Show()
 	retrieving.Close()
-	
+
 	server = content.server
 	
 	contentKey = content.key
@@ -26,15 +27,19 @@ Function showPosterScreen(content, originalSource, selectedItem) As Integer
 	if content.Type = "album" then
 		myConn = InitTrackFeedConnection(myServer, contentKey)
 		myContent = myConn.LoadTrackFeed(myConn)
+		screen.setBreadcrumbText(currentTitle, myContent[0].Artist)
 	else if content.Type = "artist" then
 		myConn = InitArtistFeedConnection(myServer, contentKey)
 		myContent = myConn.LoadArtistFeed(myConn)
+		screen.setBreadcrumbText("", currentTitle)
 	else
 		' assume it's a tracking listing for now...
 		myConn = InitTrackFeedConnection(myServer, contentKey)
 		myContent = myConn.LoadTrackFeed(myConn)
+		screen.setBreadcrumbText(currentTitle, myContent[0].Artist)
 	end if
-			
+	
+	screen.setBreadcrumbEnabled(true)
     screen.SetContentList(myContent)
 	
     while true
@@ -44,8 +49,10 @@ Function showPosterScreen(content, originalSource, selectedItem) As Integer
                 selected = myContent[msg.GetIndex()]
                 contentType = selected.ContentType
                 if contentType = "audio" then
-					SongList = CreateMp3SongList(myContent, currentTitle)
-					Show_Audio_Screen_For_Multi(songlist.posteritems, msg.GetIndex(), currentTitle)
+					if selected.Codec <> "invalid" then
+						SongList = CreateMp3SongList(myContent, currentTitle)
+						showAudioScreen(songlist.posteritems, msg.GetIndex(), currentTitle, screen)
+					end if
                 else
                 	showNextPosterScreen(currentTitle, selected)
                 end if
@@ -56,8 +63,11 @@ Function showPosterScreen(content, originalSource, selectedItem) As Integer
 					recreateGridScreen(originalSource, selectedItem)
 				end if
 				
+				screen = invalid
                 return -1
             end if
+		else
+			Print "poster screen loop"
         end if
     end while
     return 0
@@ -68,308 +78,6 @@ Function showNextPosterScreen(currentTitle, selected As Object) As Dynamic
     showPosterScreen(selected, "", "")
     return 0
 End Function
-
-Sub Show_Audio_Screen(song as Object, prevLoc as string) As Integer
-    Audio = AudioInit()
-    picture = song.HDPosterUrl
-
-	Print "##################################### CREATE AUDIO DETAIL SCREEN #####################################"
-	
-    o = CreateObject("roAssociativeArray")
-    o.HDPosterUrl = picture
-    o.SDPosterUrl = picture
-    o.Title = song.shortdescriptionline1
-	o.Description = song.shortdescriptionline2
-	o.Length = song.Length
-    o.contenttype = "audio"
-	if (song.artist <> invalid)
-		o.Artist = song.artist
-	end if
-    if (song.Album <> invalid)
-        o.Album = song.Album
-    end if
-	
-    scr = create_springboard(Audio.port, prevLoc)
-    
-	'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
-	scr.ReloadButtons(2) 'set buttons for state "playing"
-	scr.screen.SetDescriptionStyle("audio")
-	scr.screen.SetProgressIndicatorEnabled(true)
-    scr.screen.SetContent(o)
-	
-    scr.Show()
-
-    ' start playing
-    print "Starting Song Playback:";song.Url
-    Audio.setupSong(song.Url, song.StreamFormat)
-    Audio.audioplayer.setNext(0)
-	
-    Audio.setPlayState(2)		' start playing
-	
-    while true
-        msg = Audio.getMsgEvents(20000, "roSpringboardScreenEvent")
-
-        if type(msg) = "roAudioPlayerEvent"  then	' event from audio player
-            if msg.isStatusMessage() then
-                message = msg.getMessage()
-                if message = "end of playlist"
-                    print "end of playlist (obsolete status msg event)"
-                end if
-            else if msg.isListItemSelected() then
-                print "playback started"
-            else if msg.isRequestSucceeded()
-                print "ending song:"; msg.GetIndex()
-                audio.setPlayState(0)	' stop the player, wait for user input
-                scr.ReloadButtons(0)    ' set button to allow play start
-            else if msg.isRequestFailed()
-                print "failed to play song:"; msg.GetData()
-            else if msg.isFullResult()
-                print "FullResult: End of Playlist"
-            else if msg.isPaused()
-                print "Paused"
-            else if msg.isResumed()
-                print "Resumed"
-            end if
-        else if type(msg) = "roSpringboardScreenEvent" then	' event from user
-            if msg.isScreenClosed()
-				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE AUDIO DETAIL SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                Audio.setPlayState(0)
-                return -1
-            end if
-			
-            if msg.isRemoteKeyPressed() then
-                button = msg.GetIndex()
-                print "Remote Key button = "; button
-            else if msg.isButtonPressed() then
-                button = msg.GetIndex()
-                print "button index="; button
-                if button = 1 'pause or resume
-                    if Audio.isPlayState < 2	' stopped or paused?
-                        if (Audio.isPlayState = 0)
-                              Audio.audioplayer.setNext(0)
-                        end if
-						newstate = 2  ' now playing
-					else 'started
-                         newstate = 1 ' now paused
-                    end if
-                else if button = 2 ' stop
-                    newstate = 0 ' now stopped
-                end if
-                audio.setPlayState(newstate)
-                scr.ReloadButtons(newstate)
-            end if
-        end if
-    end while
-	return 0
-End Sub
-
-Sub Show_Audio_Screen_For_Multi(songs as Object, currentSelect, prevLoc as string) As Integer
-    Audio = AudioInit()
-    
-	Print "##################################### CREATE AUDIO DETAIL SCREEN #####################################"
-	picture = songs[currentSelect].HDPosterUrl
-    o = CreateObject("roAssociativeArray")
-    o.HDPosterUrl = picture
-    o.SDPosterUrl = picture
-    o.Title = songs[currentSelect].shortdescriptionline1
-	o.Description = songs[currentSelect].shortdescriptionline2
-	o.Length = songs[currentSelect].Length
-    o.contenttype = "audio"
-	if (songs[currentSelect].artist <> invalid)
-		o.Artist = songs[currentSelect].artist
-	end if
-    if (songs[currentSelect].Album <> invalid)
-        o.Album = songs[currentSelect].Album
-    end if
-
-    scr = create_springboard(Audio.port, prevLoc)
-    
-	'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
-	scr.ReloadButtons(2) 'set buttons for state "playing"
-    scr.screen.SetDescriptionStyle("audio")
-	scr.screen.SetContent(o)
-		
-    scr.Show()
-
-    ' start playing
-    'print "Starting Song Playback:";song.Url
-	totalSongs = songs.Count()
-	
-	Audio.setContentList( songs )
-    Audio.audioplayer.setNext( currentSelect )
-    Audio.setPlayState(2)		' start playing
-	Audio.audioplayer.setNext( currentSelect + 1)
-		
-	isPlaying = false
-    while true
-        msg = Audio.getMsgEvents(1000, "roSpringboardScreenEvent")
-			
-        if type(msg) = "roAudioPlayerEvent"  then	' event from audio player
-            if msg.isStatusMessage() then
-                message = msg.getMessage()
-                if message = "end of playlist"
-                    print "end of playlist (obsolete status msg event)"
-                end if
-				isPlaying = false
-            else if msg.isListItemSelected() then
-                print "playback started"
-				isPlaying = true
-            else if msg.isRequestSucceeded()
-                print "Ending song: "; msg.GetIndex()
-				isPlaying = false
-				currentSelect = currentSelect + 1
-				if currentSelect = totalSongs then
-					currentSelect = 0
-				end if
-				print "Going to next song: ";currentSelect
-				
-				Audio.setPlayState(0)
-				Audio.audioplayer.setNext(currentSelect)
-				
-				picture = songs[currentSelect].HDPosterUrl
-				o = CreateObject("roAssociativeArray")
-				o.HDPosterUrl = picture
-				o.SDPosterUrl = picture
-				o.Title = songs[currentSelect].shortdescriptionline1
-				o.Description = songs[currentSelect].shortdescriptionline2
-				o.Length = songs[currentSelect].Length
-				o.contenttype = "audio"
-				
-				print "Going to next song: ";o.Title
-				
-				if (songs[currentSelect].artist <> invalid)
-					o.Artist = songs[currentSelect].artist
-				end if
-				if (songs[currentSelect].Album <> invalid)
-					o.Album = songs[currentSelect].Album
-				end if
-				
-				'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
-				scr.ReloadButtons(2) 'set buttons for state "playing"
-				scr.screen.SetContent(o)
-				
-				scr.Show()
-				
-				newstate = 2
-				
-				Audio.setPlayState(newstate)
-				scr.ReloadButtons(newstate)
-            else if msg.isRequestFailed()
-				isPlaying = false
-                print "failed to play song:"; msg.GetData()
-            else if msg.isFullResult()
-				isPlaying = false
-                print "FullResult: End of Playlist"
-            else if msg.isPaused()
-				isPlaying = false
-                print "Paused"
-            else if msg.isResumed()
-				isPlaying = true
-                print "Resumed"
-            end if
-        else if type(msg) = "roSpringboardScreenEvent" then	' event from user
-            if msg.isScreenClosed()
-				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE AUDIO DETAIL SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                Audio.setPlayState(0)
-                return -1
-            end if
-			
-            if msg.isRemoteKeyPressed() then
-                button = msg.GetIndex()
-                print "Remote Key button = "; button
-            else if msg.isButtonPressed() then
-                button = msg.GetIndex()
-                print "button index="; button
-                if button = 1 'pause or resume
-                    if Audio.isPlayState < 2	' stopped or paused?
-                        if (Audio.isPlayState = 0)
-                              Audio.audioplayer.setNext(currentSelect)
-                        end if
-						newstate = 2  ' now playing
-					else 'started
-                         newstate = 1 ' now paused
-                    end if
-                else if button = 2 ' stop
-                    newstate = 0 ' now stopped
-				else if button = 3 ' next
-					currentSelect = currentSelect + 1
-					if currentSelect = totalSongs then
-						currentSelect = 0
-					end if
-					print "Going to next song: ";currentSelect
-					
-					Audio.setPlayState(0)
-					Audio.audioplayer.setNext(currentSelect)
-					
-					picture = songs[currentSelect].HDPosterUrl
-					o = CreateObject("roAssociativeArray")
-					o.HDPosterUrl = picture
-					o.SDPosterUrl = picture
-					o.Title = songs[currentSelect].shortdescriptionline1
-					o.Description = songs[currentSelect].shortdescriptionline2
-					o.Length = songs[currentSelect].Length
-					o.contenttype = "audio"
-					
-					print "Going to next song: ";o.Title
-					
-					if (songs[currentSelect].artist <> invalid)
-						o.Artist = songs[currentSelect].artist
-					end if
-					if (songs[currentSelect].Album <> invalid)
-						o.Album = songs[currentSelect].Album
-					end if
-					
-					'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
-					scr.ReloadButtons(2) 'set buttons for state "playing"
-					scr.screen.SetContent(o)
-					
-					scr.Show()
-					
-					newstate = 2 
-				else if button = 4 ' previous
-					currentSelect = currentSelect - 1
-					if currentSelect < 0 then
-						currentSelect = totalSongs - 1
-					end if
-					print "Going to previous song: ";currentSelect
-					
-					Audio.setPlayState(0)
-					Audio.audioplayer.setNext(currentSelect)
-					
-					picture = songs[currentSelect].HDPosterUrl
-					o = CreateObject("roAssociativeArray")
-					o.HDPosterUrl = picture
-					o.SDPosterUrl = picture
-					o.Title = songs[currentSelect].shortdescriptionline1
-					o.Description = songs[currentSelect].shortdescriptionline2
-					o.Length = songs[currentSelect].Length
-					o.contenttype = "audio"
-					
-					print "Going to previous song: ";o.Title
-					
-					if (songs[currentSelect].artist <> invalid)
-						o.Artist = songs[currentSelect].artist
-					end if
-					if (songs[currentSelect].Album <> invalid)
-						o.Album = songs[currentSelect].Album
-					end if
-					
-					'SaveCoverArtForScreenSaver(o.SDPosterUrl,o.HDPosterUrl)
-					scr.ReloadButtons(2) 'set buttons for state "playing"
-					scr.screen.SetContent(o)
-					
-					scr.Show()	
-					
-					newstate = 2 
-                end if
-				
-                Audio.setPlayState(newstate)
-                scr.ReloadButtons(newstate)
-            end if
-        end if
-    end while
-	return 0
-End Sub
 
 Function CreateMp3SongList( songContent, albumTitle ) as Object	
     aa = CreateObject("roAssociativeArray")
