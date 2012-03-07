@@ -59,10 +59,7 @@ Sub showAudioScreen(songs as Object, currentSelect, prevLoc as string, prevScree
         if type(msg) = "roAudioPlayerEvent"  then	' event from audio player
             if msg.isStatusMessage() then
                 message = msg.getMessage()
-				print "Audio Status Message: "; message
-                if message = "end of playlist"
-                    print "end of playlist (obsolete status msg event)"
-				else if message = "start of play"
+				if message = "start of play"
 					isPlaying = true
                 end if
             else if msg.isListItemSelected() then
@@ -91,6 +88,7 @@ Sub showAudioScreen(songs as Object, currentSelect, prevLoc as string, prevScree
 				
 				currentTime = 0
 				totalTime = o.Length
+				screen.setProgressIndicator(currentTime, totalTime)
 					
 				print "Going to next song: ";o.Title
 				
@@ -232,6 +230,8 @@ Sub showAudioScreen(songs as Object, currentSelect, prevLoc as string, prevScree
                     end if
                 else if button = 2 ' stop
                     newstate = 0 ' now stopped
+					currentTime = 0
+					screen.setProgressIndicator(currentTime, totalTime)
 				else if button = 3 ' next
 					currentSelect = currentSelect + 1
 					if currentSelect = totalSongs then
