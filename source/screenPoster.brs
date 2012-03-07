@@ -58,12 +58,6 @@ Function showPosterScreen(content, originalSource, selectedItem) As Integer
                 end if
             else if msg.isScreenClosed() then
 				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE POSTER SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-				' if we are going back to the grid then recreate it to get around the display "bug"
-				if type(originalSource) = "roAssociativeArray" then
-					recreateGridScreen(originalSource, selectedItem)
-				end if
-				
-				screen = invalid
                 return -1
             end if
 		else

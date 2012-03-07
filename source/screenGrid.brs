@@ -4,7 +4,7 @@ Function showGridScreen(content) As Integer
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
 	
-	Print "##################################### CREATE INITIAL GRID SCREEN #####################################"
+	Print "##################################### CREATE GRID SCREEN #####################################"
 	m.port = CreateObject("roMessagePort")
     grid = CreateObject("roGridScreen")
 	grid.SetMessagePort(m.port)
@@ -36,7 +36,7 @@ Function showGridScreen(content) As Integer
 	keyCount = m.DirectoryNames.Count()
 	contentArray = []
 	rowCount = 0
-	
+		
 	performanceTimer.Mark()
 	rowCount = loadNextRow(grid, contentKey, m.Directories[rowCount], contentArray, rowCount)
 	Print "### TIMER - ROW LOADER -- First row took: " + itostr(performanceTimer.TotalMilliseconds())
@@ -51,15 +51,17 @@ Function showGridScreen(content) As Integer
 	showCount = rowCount
 	
 	currentWait = 1
+	recreatingGrid = false
 	
 	while true
         msg = wait(currentWait, m.port)
 		
         if type(msg) = "roGridScreenEvent" then
             if msg.isListItemSelected() then
-				'print "Selected msg: ";msg.GetData()
 				row = msg.GetIndex()
 				if row < rowCount then
+					recreatingGrid = true
+					
 					selection = msg.getData()
 					selectedItem = CreateFocusItem(row, selection)
 					
@@ -73,19 +75,30 @@ Function showGridScreen(content) As Integer
 						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
 					end if
 					
-					' exit the loop
-					return -1
+					' when we come back recreate the gridscreen
+					grid = CreateObject("roGridScreen")
+					grid.SetMessagePort(m.port)
+						
+					grid.SetDisplayMode("scale-to-fit")
+					grid.SetUpBehaviorAtTopRow("exit")
+	
+					recreateGridScreen(grid, originalGrid, selectedItem)
 				end if
             else if msg.isScreenClosed() then
-				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE INITIAL GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-				Print "closed initial gridscreen: " + currentTitle
-				
-				LaunchHomeScreen()
-                return -1
+				if recreatingGrid = false then
+					Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+					Print "closed initial gridscreen: " + currentTitle
+					LaunchHomeScreen()
+					return -1
+				else
+					' ignore the case when the grid is being recreated and reset the system
+					recreatingGrid = false
+				end if
             end if
 		else
 			if currentWait = 1 then
 				' This app only showing top 2 rows for now so force them out of view...
+				' need to clean this up later. Should filter the results before putting them in the grid
 				if showCount < keyCount then
 					if showCount > 1 then
 						grid.setListVisible(showCount, false)
@@ -131,89 +144,44 @@ Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) 
 	return myRowCount
 End Function
 
-Function recreateGridScreen(originalGrid, originalSelection) As Integer		
+Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Object 		
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
 	
-	Print "##################################### RECREATE GRID SCREEN #####################################"
-	m.port = CreateObject("roMessagePort")
-    regrid = CreateObject("roGridScreen")
-	regrid.SetMessagePort(m.port)
-		
-    regrid.SetDisplayMode("scale-to-fit")
-	regrid.SetUpBehaviorAtTopRow("exit")
+	Print "##################################### RELOAD GRID SCREEN #####################################"
 	
 	performanceTimer = CreateObject("roTimespan")
 	performanceTimer.Mark()
-	
-	contentKey = originalGrid.Content.key
-	currentTitle = originalGrid.Content.Title
-	myServer = originalGrid.Server
+
 	directoryNames = originalGrid.DirectoryNames
 	contentArray = originalGrid.ContentArray
 		
-    regrid.SetupLists(directoryNames.Count()) 
-	Print "### TIMER - GRID TIMER -- SetupLists took: " + itostr(performanceTimer.TotalMilliseconds())
+    gridscreen.SetupLists(directoryNames.Count()) 
+	Print "### TIMER - RELOAD GRID TIMER -- SetupLists took: " + itostr(performanceTimer.TotalMilliseconds())
 	
 	performanceTimer.Mark()
-	regrid.SetListNames(directoryNames)
-	Print "### TIMER - GRID TIMER -- SetListNames took: " + itostr(performanceTimer.TotalMilliseconds())
+	gridscreen.SetListNames(directoryNames)
+	Print "### TIMER - RELOAD GRID TIMER -- SetListNames took: " + itostr(performanceTimer.TotalMilliseconds())
 
 	keyCount = directoryNames.Count()
 	rowCount = 0	
 	
 	performanceTimer.Mark()
 	for each items in directoryNames
-		regrid.setContentList(rowCount, contentArray[rowCount])
+		gridscreen.setContentList(rowCount, contentArray[rowCount])
 		
 		' This app only showing top 2 rows for now...
 		if originalSelection.RowNumber = rowCount then
-			regrid.SetFocusedListItem(originalSelection.RowNumber, originalSelection.ItemNumber)
+			gridscreen.SetFocusedListItem(originalSelection.RowNumber, originalSelection.ItemNumber)
 		else if rowCount > 1 then
-			regrid.setListVisible(rowCount, false)
+			gridscreen.setListVisible(rowCount, false)
 		end if
 		rowCount = rowCount + 1
 	next
-
-	' Show the regrid...
-	regrid.Show()
+	Print "### TIMER - RELOAD GRID TIMER -- Reloading Grid took: " + itostr(performanceTimer.TotalMilliseconds())
 	
-	Print "### TIMER - TOTAL GRID RELOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
-		
-	while true
-        msg = wait(0, m.port)
-		
-        if type(msg) = "roGridScreenEvent" then
-            if msg.isListItemSelected() then
-				'print "Selected msg: ";msg.GetData()
-				row = msg.GetIndex()
-				if row < rowCount then
-					selection = msg.getData()
-					selectedItem = CreateFocusItem(row, selection)
-					
-					contentSelected = contentArray[row][selection]
-					contentType = contentSelected.ContentType
-
-					cType = contentSelected.Type
-					if cType = "album" then
-						displayPosterScreen(regrid, contentSelected, originalGrid, selectedItem)
-					else if cType = "artist" then
-						displayPosterScreen(regrid, contentSelected, originalGrid, selectedItem)
-					end if
-				end if
-				
-				' exit the loop
-				return -1
-            else if msg.isScreenClosed() then
-				Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE RECREATED GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"	
-				Print "closed recreated gridscreen: " + currentTitle
-				
-				LaunchHomeScreen()				
-                return -1
-            end if
-        end if
-    end while
-	return 0
+	' Show the grid...
+	gridscreen.Show()
 End Function
 
 Function CreateFocusItem(focusRow, focusItem) as Object
@@ -233,9 +201,8 @@ Function CreateGridStorage(oringinalContent, originalServer, originalDirectoryNa
 end Function
 
 Function displayPosterScreen(activeGrid, contentList, originalSource, selectedItem)
-	' Close the active grid, we will have to recreate it...
-	activeGrid.Close()
-	
+	' Close the active grid, we will have to recreate it...				
 	Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSED ACTIVE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	activeGrid.Close()
 	showPosterScreen(contentList, originalSource, selectedItem)
 End Function
