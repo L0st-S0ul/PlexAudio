@@ -22,6 +22,9 @@ Function showGridScreen(content) As Integer
 	initDirectoryList(myServer, contentKey)
 	Print "### TIMER - GRID TIMER -- initDirectoryList took: " + itostr(performanceTimer.TotalMilliseconds())
 	
+	' add in the more catagories option
+	m.DirectoryNames.Push("More Catagories")
+	
 	performanceTimer.Mark()
     grid.SetupLists(m.DirectoryNames.Count()) 
 	Print "### TIMER - GRID TIMER -- SetupLists took: " + itostr(performanceTimer.TotalMilliseconds())
@@ -45,16 +48,17 @@ Function showGridScreen(content) As Integer
 	rowCount = loadNextRow(grid, contentKey, m.Directories[rowCount], contentArray, rowCount)
 	Print "### TIMER - ROW LOADER -- row took: " + itostr(performanceTimer.TotalMilliseconds())
 	
+	rowCount = addMoreContentRow(grid, contentArray, rowCount)
+	
 	originalGrid = CreateGridStorage(content, myServer, m.DirectoryNames, contentArray)
 	Print "### TIMER - TOTAL INITIAL GRID LOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
 	
 	showCount = rowCount
 	
-	currentWait = 1
 	recreatingGrid = false
 	
 	while true
-        msg = wait(currentWait, m.port)
+        msg = wait(0, m.port)
 		
         if type(msg) = "roGridScreenEvent" then
             if msg.isListItemSelected() then
@@ -70,9 +74,11 @@ Function showGridScreen(content) As Integer
 					
 					cType = contentSelected.Type
 					if cType = "album" then
-						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
+						displayPosterScreen(grid, contentSelected)
 					else if cType = "artist" then
-						displayPosterScreen(grid, contentSelected, originalGrid, selectedItem)
+						displayPosterScreen(grid, contentSelected)
+					else if cType = "sub" then
+						displaySubGridScreen(grid, contentSelected, contentKey)
 					end if
 					
 					' when we come back recreate the gridscreen
@@ -95,20 +101,6 @@ Function showGridScreen(content) As Integer
 					recreatingGrid = false
 				end if
             end if
-		else
-			if currentWait = 1 then
-				' This app only showing top 2 rows for now so force them out of view...
-				' need to clean this up later. Should filter the results before putting them in the grid
-				if showCount < keyCount then
-					if showCount > 1 then
-						grid.setListVisible(showCount, false)
-					end if
-					showCount = showCount + 1
-				else
-					' when finished set the timer to hang on
-					currentWait = 0
-				end if
-			end if
         end if
     end while
 	return 0
@@ -144,6 +136,43 @@ Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) 
 	return myRowCount
 End Function
 
+Function addMoreContentRow(myGrid, myContentArray, myRowCount) as Integer
+	' now add the custom guys
+	contentList = [
+        {
+            Title: "By Genre",
+			Type: "sub",
+            Description:"View your catalog by Genre",
+			Key: "genre",
+            HDPosterUrl:"file://pkg:/images/genre.jpg",
+            SDPosterUrl:"file://pkg:/images/genre.jpg",
+        }
+        {
+            Title: "By Decade",
+            Description:"View your catalog by the decade the album was released",
+			Type: "sub",
+			Key: "decade",
+            HDPosterUrl:"file://pkg:/images/decade.jpg",
+            SDPosterUrl:"file://pkg:/images/decade.jpg",
+        }
+        {
+            Title: "By Year",
+            Description:"View your catalog by year the album was released",
+			Type: "sub",
+			Key: "year",
+            HDPosterUrl:"file://pkg:/images/year.jpg",
+            SDPosterUrl:"file://pkg:/images/year.jpg",
+        }
+	]
+	
+	myContentArray[myRowCount] = contentList
+	
+	myGrid.setContentList(myRowCount, myContentArray[myRowCount])
+	myRowCount = myRowCount + 1
+	
+	return myRowCount
+End Function
+
 Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Object 		
 	totalTimer = CreateObject("roTimespan")
 	totalTimer.Mark()
@@ -155,15 +184,10 @@ Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Obje
 
 	directoryNames = originalGrid.DirectoryNames
 	contentArray = originalGrid.ContentArray
-		
-    gridscreen.SetupLists(directoryNames.Count()) 
-	Print "### TIMER - RELOAD GRID TIMER -- SetupLists took: " + itostr(performanceTimer.TotalMilliseconds())
 	
-	performanceTimer.Mark()
+    gridscreen.SetupLists(directoryNames.Count()) 
 	gridscreen.SetListNames(directoryNames)
-	Print "### TIMER - RELOAD GRID TIMER -- SetListNames took: " + itostr(performanceTimer.TotalMilliseconds())
 
-	keyCount = directoryNames.Count()
 	rowCount = 0	
 	
 	performanceTimer.Mark()
@@ -173,36 +197,15 @@ Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Obje
 		' This app only showing top 2 rows for now...
 		if originalSelection.RowNumber = rowCount then
 			gridscreen.SetFocusedListItem(originalSelection.RowNumber, originalSelection.ItemNumber)
-		else if rowCount > 1 then
-			gridscreen.setListVisible(rowCount, false)
 		end if
 		rowCount = rowCount + 1
 	next
+	
 	Print "### TIMER - RELOAD GRID TIMER -- Reloading Grid took: " + itostr(performanceTimer.TotalMilliseconds())
 	
 	' Show the grid...
 	gridscreen.Show()
 End Function
 
-Function CreateFocusItem(focusRow, focusItem) as Object
-    item = CreateObject("roAssociativeArray")
-    item.RowNumber = focusRow
-	item.ItemNumber = focusItem
-    return item
-end Function
 
-Function CreateGridStorage(oringinalContent, originalServer, originalDirectoryNames, originalContentArray) as Object
-    item = CreateObject("roAssociativeArray")
-    item.Content = oringinalContent
-	item.Server = originalServer
-	item.DirectoryNames = originalDirectoryNames
-	item.ContentArray = originalContentArray
-    return item
-end Function
 
-Function displayPosterScreen(activeGrid, contentList, originalSource, selectedItem)
-	' Close the active grid, we will have to recreate it...				
-	Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSED ACTIVE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-	activeGrid.Close()
-	showPosterScreen(contentList, originalSource, selectedItem)
-End Function

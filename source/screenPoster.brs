@@ -1,5 +1,12 @@
+Function displayPosterScreen(activeGrid, contentList)
+	' Close the active grid, we will have to recreate it...				
+	Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSED ACTIVE GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	activeGrid.Close()
+	showPosterScreen(contentList)
+End Function
+
 '* Displays the content in a poster screen. Can be any content type.
-Function showPosterScreen(content, originalSource, selectedItem) As Integer	
+Function showPosterScreen(content) As Integer	
 	Print "##################################### CREATE POSTER SCREEN #####################################"
 	
 	retrieving = CreateObject("roOneLineDialog")
@@ -69,7 +76,7 @@ End Function
 
 Function showNextPosterScreen(currentTitle, selected As Object) As Dynamic
     if validateParam(selected, "roAssociativeArray", "showNextPosterScreen") = false return -1
-    showPosterScreen(selected, "", "")
+    showPosterScreen(selected)
     return 0
 End Function
 

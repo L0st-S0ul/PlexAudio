@@ -29,13 +29,17 @@ Function get_artist_names(directories As Object) As Dynamic
 End Function
 
 Function load_artist_feed(conn As Object) As Dynamic
-    http = NewHttp(conn.ServerURL)
-	ArtistFeed = []
+    http = CreateObject("roUrlTransfer")
+    http.SetPort(CreateObject("roMessagePort"))
+    http.SetUrl(conn.ServerURL)
+    http.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    http.EnableEncodings(true)
+    Print "Artist feed url: ";http.GetUrl() 
 	
-    Dbg("artist feed url: ", http.Http.GetUrl())
+	ArtistFeed = []
 
     m.Timer.Mark()
-    response = http.GetToStringWithRetry()
+    response = http.GetToString()
     'Dbg("Server Communication Took: ", m.Timer)
 
     m.Timer.Mark()

@@ -1,8 +1,35 @@
-'**********************************************************
-'**  Video Player Example Application - General Utilities 
-'**  November 2009
-'**  Copyright (c) 2009 Roku Inc. All Rights Reserved.
-'**********************************************************
+' Constructs an url that will return a better image for viewing from plex
+Function CreateServerImageResizeLocation(baseurl as String, imageurl as String, newwidth as String, newheight as String) as String
+	' We don't need the unique number for the transcode, plex will actually barf on it.
+	questionLocation = instr(1,imageurl,"?")
+	if questionLocation <> 0 then
+		imageurl = Mid(imageurl, 1, questionLocation-1)
+	end if
+	return baseurl+"/photo/:/transcode?url="+imageurl+"&width="+newwidth+"&height="+newheight
+End Function
+
+' constructs a new http object
+Function createNewNetworkConnection(msgPort)
+	myHttp = CreateObject("roUrlTransfer")
+    myHttp.SetPort(msgPort)
+	return myHttp
+End Function
+
+Function CreateFocusItem(focusRow, focusItem) as Object
+    item = CreateObject("roAssociativeArray")
+    item.RowNumber = focusRow
+	item.ItemNumber = focusItem
+    return item
+end Function
+
+Function CreateGridStorage(oringinalContent, originalServer, originalDirectoryNames, originalContentArray) as Object
+    item = CreateObject("roAssociativeArray")
+    item.Content = oringinalContent
+	item.Server = originalServer
+	item.DirectoryNames = originalDirectoryNames
+	item.ContentArray = originalContentArray
+    return item
+end Function
 
 '******************************************************
 'Registry Helper Functions
@@ -33,7 +60,6 @@ Function RegExists(key, section=invalid)
     sec = CreateObject("roRegistrySection", section)
     return sec.Exists(key)
 End Function
-
 
 '******************************************************
 'Insertion Sort
@@ -70,7 +96,6 @@ Sub Sort(A as Object, key=invalid as dynamic)
     end if
 
 End Sub
-
 
 '******************************************************
 'Convert anything to a string

@@ -1,10 +1,10 @@
-Function initDirectoryList(baseServerURL, path) As Void
-    conn = InitDirectoryFeedConnection(baseServerURL, path)
-    m.Directories = conn.LoadDirectoryFeed(conn)
-	m.DirectoryNames = conn.GetDirectoryNames( m.Directories )
+Function initSecondaryList(baseServerURL, path) As Void
+    conn = InitSecondaryFeedConnection(baseServerURL, path)
+    m.Secondaries = conn.LoadSecondaryFeed(conn)
+	m.SecondaryNames = conn.GetSecondaryNames( m.Secondaries )
 End Function
 
-Function InitDirectoryFeedConnection(baseServerURL, path) As Object
+Function InitSecondaryFeedConnection(baseServerURL, path) As Object
     conn = CreateObject("roAssociativeArray")
 	
 	conn.BaseURL   = baseServerURL
@@ -16,30 +16,30 @@ Function InitDirectoryFeedConnection(baseServerURL, path) As Object
 	
     conn.Timer = CreateObject("roTimespan")
 
-    conn.LoadDirectoryFeed    = load_Directory_feed
-    conn.GetDirectoryNames    = get_Directory_names
+    conn.LoadSecondaryFeed    = load_secondary_feed
+    conn.GetSecondaryNames    = get_secondary_names
 	
     return conn
 End Function
 
-Function get_directory_names(directories As Object) As Dynamic
-    DirectoryNames = []
+Function get_secondary_names(directories As Object) As Dynamic
+    SecondaryNames = []
     for each directory in directories
-        DirectoryNames.Push(directory.Title)
+        SecondaryNames.Push(directory.Title)
     next
-    return DirectoryNames
+    return SecondaryNames
 End Function
 
-Function load_directory_feed(conn As Object) As Dynamic
-    http = CreateObject("roUrlTransfer")
+Function load_secondary_feed(conn As Object) As Dynamic
+	http = CreateObject("roUrlTransfer")
     http.SetPort(CreateObject("roMessagePort"))
     http.SetUrl(conn.ServerURL)
     http.AddHeader("Content-Type", "application/x-www-form-urlencoded")
     http.EnableEncodings(true)
-    Print "Directory feed url: ";http.GetUrl() 
-	
-	DirectoryFeed = []
+    Print "Secondary feed url: ";http.GetUrl() 
 
+	SecondaryFeed = []
+	
     m.Timer.Mark()
     response = http.GetToString()
     Print "Server Communication Took: ";m.Timer.TotalMilliseconds()
@@ -50,11 +50,11 @@ Function load_directory_feed(conn As Object) As Dynamic
         print "Can't parse feed"
         return invalid
     endif
-    Print "XML Parse Took: ";m.Timer.TotalMilliseconds()
+    Print "Parse Took: ";m.Timer.TotalMilliseconds()
 
     m.Timer.Mark()
     if xml.Directory = invalid then
-        print "no directories tag"
+        print "no secondary directories tag"
         return invalid
     endif
 
@@ -64,36 +64,34 @@ Function load_directory_feed(conn As Object) As Dynamic
     endif
 
     if xml.Directory[0].GetName() <> "Directory" then
-        print "no initial directory tag"
+        print "no initial secondary directory tag"
         return invalid
     endif
 	
     directories = xml.GetChildElements()
-    print "number of directories: " + itostr(directories.Count())
+    Print "number of secondary directories: " + itostr(directories.Count())
     for each e in directories 
-		' only do artist or albums. 
-		if e@type = "artist" OR e@type = "album" OR e@key = "all" OR e@key = "albums" then
-			o = ParseDirectoryNode(conn.BaseURL, e)
-			DirectoryFeed.Push(o)
-		end if
+		o = ParseSecondaryNode(conn.BaseURL, e)
+		SecondaryFeed.Push(o)
     next
-    Print "XML Loading Took: ";m.Timer.TotalMilliseconds()
+    Print "XML Loading: ";m.Timer.TotalMilliseconds()
 
-	return DirectoryFeed
+	return SecondaryFeed
 End Function
 
-Function ParseDirectoryNode(BaseURL, xml As Object) As dynamic
+Function ParseSecondaryNode(BaseURL, xml As Object) As dynamic
 	'performanceTimer = CreateObject("roTimespan")
 	'performanceTimer.Mark()
 		
     o = CreateObject("roAssociativeArray")
 
-    'print "ParseDirectoryNode: " + xml.GetName()
+    'print "ParseSecondaryNode: " + xml.GetName()
     'PrintXML(xml, 5)
 
     if xml.GetName() = "Directory" then	
 		o.ContentType = "series"
-		o.Title = xml@title
+
+		o.Title = xml@title		
 
 		if xml@summary <> invalid then
 			if len(xml@summary) > 180 then
@@ -106,7 +104,6 @@ Function ParseDirectoryNode(BaseURL, xml As Object) As dynamic
 		end if
 		
 		o.ShortDescriptionLine1 = xml@title
-		
 		if xml@summary <> invalid then
 			if len(xml@summary) > 180 then
 				o.ShortDescriptionLine2 = left(xml@summary, 180)+"..."
@@ -133,8 +130,50 @@ Function ParseDirectoryNode(BaseURL, xml As Object) As dynamic
 		end if
     else
         return invalid
-    endif
-	
+    end if
+
 	'Print "Loading Track Metadata Took: ";performanceTimer.TotalMilliseconds()
     return o
+End Function
+
+' load a feed from and xml string instead of going out to get it
+Function LoadSubFeed(xmlString)
+	DirectoryFeed = []
+	
+	myServer = RegRead("server", "preference")
+	
+	'print "XML: "; xmlString
+	
+    xml=CreateObject("roXMLElement")
+    if not xml.Parse(xmlString) then
+        print "Can't parse feed"
+        return invalid
+    endif
+
+    if xml.Directory = invalid then
+        print "no directories tag"
+        return invalid
+    endif
+
+    if islist(xml.Directory) = false then
+        print "invalid feed body"
+        return invalid
+    endif
+
+    if xml.Directory[0].GetName() <> "Directory" then
+        print "no initial directory tag"
+        return invalid
+    endif
+	
+    directories = xml.GetChildElements()
+    print "number of directories: " + itostr(directories.Count())
+    for each e in directories 
+		' only do artist or albums. 
+		if e@type = "artist" OR e@type = "album" OR e@key = "all" OR e@key = "albums" then
+			o = ParseDirectoryNode(myServer, e)
+			DirectoryFeed.Push(o)
+		end if
+    next
+
+	return DirectoryFeed
 End Function

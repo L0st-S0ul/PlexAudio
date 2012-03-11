@@ -21,24 +21,23 @@ Function get_track_names(directories As Object) As Dynamic
 End Function
 
 Function load_track_feed(conn As Object) As Dynamic
-    http = NewHttp(conn.ServerURL)
+    http = CreateObject("roUrlTransfer")
+    http.SetPort(CreateObject("roMessagePort"))
+    http.SetUrl(conn.ServerURL)
+    http.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    http.EnableEncodings(true)
+    Print "track feed url: ";http.GetUrl() 
+	
 	TrackFeed = CreateObject("roArray", 100, true)
 	
-    Dbg("track feed url: ", http.Http.GetUrl())
+    response = http.GetToString()
 
-    m.Timer.Mark()
-    response = http.GetToStringWithRetry()
-    'Dbg("Server Communication Took: ", m.Timer)
-
-    m.Timer.Mark()
     xml=CreateObject("roXMLElement")
     if not xml.Parse(response) then
         print "Can't parse feed"
         return invalid
     endif
-    'Dbg("Parse Took: ", m.Timer)
 
-    m.Timer.Mark()
     if xml.Track = invalid then
         print "no track tag"
         return invalid
@@ -55,12 +54,10 @@ Function load_track_feed(conn As Object) As Dynamic
     endif
 	
     directories = xml.GetChildElements()
-    'print "number of directories: " + itostr(directories.Count())
     for each e in directories 
         o = ParseTrackNode(conn.BaseURL, e, xml)
 		TrackFeed.Push(o)
     next
-    'Dbg("XML Loading: ", m.Timer)
 
 	return TrackFeed
 End Function
@@ -71,8 +68,6 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
     'print "ParseTrackNode: " + xml.GetName()
     'PrintXML(xml, 5)
 
-    'parse the curent node to determine the type. everything except
-    'special categories are considered normal, others have unique types 
     if xml.GetName() = "Track" then	
 		o.ContentType = "audio"
 		o.Title = xml@title
@@ -147,7 +142,6 @@ Function ParseTrackNode(BaseURL, xml As Object, parentxml As Object) As dynamic
 					o.SDPosterURL = "file://pkg:/images/track-fanart.jpg"
 					o.HDPosterURL = "file://pkg:/images/track-fanart.jpg"
 				end if
-				'print "Track Url: ";o.HDPosterURL 
 			else
 				o.Codec = "invalid"
 				o.SDPosterURL = "file://pkg:/images/track-na.jpg"
