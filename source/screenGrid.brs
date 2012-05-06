@@ -94,12 +94,12 @@ Function showGridScreen(content) As Integer
 					grid.SetUpBehaviorAtTopRow("exit")
 	
 					' if we're fully loaded then let's go
-					if loaded = showCount then
+					if loaded = showCount-1 then
 						recreateGridScreen(grid, originalGrid, selectedItem)
 					else ' we were not fully loaded so we need to start from scratch...
 						Print "##################################### RELOAD GRID SCREEN FROM SCRATCH #####################################"
-						subGrid.SetupLists(m.DirectoryNames.Count()) 
-						subGrid.SetListNames(m.DirectoryNames)
+						grid.SetupLists(m.DirectoryNames.Count()) 
+						grid.SetListNames(m.DirectoryNames)
 						
 						rowCount = 0	
 						loaded = 0
@@ -147,7 +147,7 @@ Function showGridScreen(content) As Integer
 					rowNum = rowNum + 1
 				next
 				
-				if loaded = showCount then
+				if loaded = showCount-1 then
 					originalGrid = CreateGridStorage(content, myServer, m.DirectoryNames, contentArray)
 					
 					Print "### TIMER - TOTAL GRID LOADING TIME: " + itostr(totalTimer.TotalMilliseconds())

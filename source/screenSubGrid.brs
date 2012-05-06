@@ -46,13 +46,13 @@ Function showSubGridScreen(content, myParentKey) As Integer
 	
 	performanceTimer.Mark()
 
-	httpArray[rowCount] = createNewNetworkConnection(subPort)
-	rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
+	'httpArray[rowCount] = createNewNetworkConnection(subPort)
+	'rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
 	
 	'httpArray[rowCount] = createNewNetworkConnection(subPort)
 	'rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
 
-	Print "### TIMER - http object creation: " + itostr(performanceTimer.TotalMilliseconds())
+	'Print "### TIMER - http object creation: " + itostr(performanceTimer.TotalMilliseconds())
 	
 	recreatingGrid = false
 	
