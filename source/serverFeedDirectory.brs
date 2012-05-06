@@ -9,7 +9,7 @@ Function InitDirectoryFeedConnection(baseServerURL, path) As Object
 	
 	conn.BaseURL   = baseServerURL
 	if path <> "" then
-		conn.ServerURL   = baseServerURL+"/library/sections/" + path
+		conn.ServerURL   = baseServerURL+"/library/sections/"+path
 	else
 		conn.ServerURL   = baseServerURL+"/library/sections"
 	end if
@@ -72,7 +72,7 @@ Function load_directory_feed(conn As Object) As Dynamic
     print "number of directories: " + itostr(directories.Count())
     for each e in directories 
 		' only do artist or albums. 
-		if e@type = "artist" OR e@type = "album" OR e@key = "all" OR e@key = "albums" then
+		if e@type = "artist" OR e@type = "album" OR e@key = "all" OR e@key = "albums" OR e@key = "recentlyAdded" then
 			o = ParseDirectoryNode(conn.BaseURL, e)
 			DirectoryFeed.Push(o)
 		end if

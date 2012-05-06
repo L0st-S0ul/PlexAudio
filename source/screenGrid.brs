@@ -22,41 +22,46 @@ Function showGridScreen(content) As Integer
 	initDirectoryList(myServer, contentKey)
 	Print "### TIMER - GRID TIMER -- initDirectoryList took: " + itostr(performanceTimer.TotalMilliseconds())
 	
-	' add in the more catagories option
-	m.DirectoryNames.Push("More Catagories")
+	' add in the more categories option
+	m.DirectoryNames.Push("Categories")
 	
-	performanceTimer.Mark()
     grid.SetupLists(m.DirectoryNames.Count()) 
-	Print "### TIMER - GRID TIMER -- SetupLists took: " + itostr(performanceTimer.TotalMilliseconds())
-	
-	performanceTimer.Mark()
 	grid.SetListNames(m.DirectoryNames)
-	Print "### TIMER - GRID TIMER -- SetListNames took: " + itostr(performanceTimer.TotalMilliseconds())
-	
-	' Show the grid...
-	grid.Show()
-	
+
 	keyCount = m.DirectoryNames.Count()
+	
 	contentArray = []
+	identityArray = []
+	httpArray = []
+	
 	rowCount = 0
+	loaded = 0
+	
+	showCount =  m.Directories.Count()
 		
+	' let's block on the artists first. Make sure it's loaded before showing the screen.
 	performanceTimer.Mark()
-	rowCount = loadNextRow(grid, contentKey, m.Directories[rowCount], contentArray, rowCount)
+	rowCount = loadBlockingRow(grid, contentKey, m.Directories[rowCount], contentArray, rowCount)
 	Print "### TIMER - ROW LOADER -- First row took: " + itostr(performanceTimer.TotalMilliseconds())
 	
 	performanceTimer.Mark()
-	rowCount = loadNextRow(grid, contentKey, m.Directories[rowCount], contentArray, rowCount)
-	Print "### TIMER - ROW LOADER -- row took: " + itostr(performanceTimer.TotalMilliseconds())
 	
+	httpArray[rowCount] = createNewNetworkConnection(m.port)
+	rowCount = loadNextRow(httpArray[rowCount], contentKey, m.Directories[rowCount], identityArray, rowCount)
+	
+	httpArray[rowCount] = createNewNetworkConnection(m.port)
+	rowCount = loadNextRow(httpArray[rowCount], contentKey, m.Directories[rowCount], identityArray, rowCount)
+	
+	' add the more content row...
 	rowCount = addMoreContentRow(grid, contentArray, rowCount)
 	
-	originalGrid = CreateGridStorage(content, myServer, m.DirectoryNames, contentArray)
-	Print "### TIMER - TOTAL INITIAL GRID LOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
-	
-	showCount = rowCount
-	
+	Print "### TIMER - INITIAL HTTP OBJECT CREATION: " + itostr(performanceTimer.TotalMilliseconds())
+		
 	recreatingGrid = false
 	
+	' Show the grid...
+	grid.Show()
+					
 	while true
         msg = wait(0, m.port)
 		
@@ -88,7 +93,32 @@ Function showGridScreen(content) As Integer
 					grid.SetDisplayMode("scale-to-fit")
 					grid.SetUpBehaviorAtTopRow("exit")
 	
-					recreateGridScreen(grid, originalGrid, selectedItem)
+					' if we're fully loaded then let's go
+					if loaded = showCount then
+						recreateGridScreen(grid, originalGrid, selectedItem)
+					else ' we were not fully loaded so we need to start from scratch...
+						Print "##################################### RELOAD GRID SCREEN FROM SCRATCH #####################################"
+						subGrid.SetupLists(m.DirectoryNames.Count()) 
+						subGrid.SetListNames(m.DirectoryNames)
+						
+						rowCount = 0	
+						loaded = 0
+
+						rowCount = loadBlockingRow(grid, contentKey, m.Directories[rowCount], contentArray, rowCount)
+						performanceTimer.Mark()
+						
+						httpArray[rowCount] = createNewNetworkConnection(m.port)
+						rowCount = loadNextRow(httpArray[rowCount], contentKey, m.Directories[rowCount], identityArray, rowCount)
+						
+						httpArray[rowCount] = createNewNetworkConnection(m.port)
+						rowCount = loadNextRow(httpArray[rowCount], contentKey, m.Directories[rowCount], identityArray, rowCount)
+						
+						' add the more content row...
+						rowCount = addMoreContentRow(grid, contentArray, rowCount)
+	
+						' Show the grid...
+						grid.Show()
+					end if
 				end if
             else if msg.isScreenClosed() then
 				if recreatingGrid = false then
@@ -101,23 +131,67 @@ Function showGridScreen(content) As Integer
 					recreatingGrid = false
 				end if
             end if
+		else if type(msg) = "roUrlEvent" then			
+			if msg.GetInt() = 1 then
+				myIdentity = msg.GetSourceIdentity()
+				myString = msg.GetString()
+				
+				' find the row to put it in...
+				rowNum = 0
+				for each item in identityArray
+					if item = myIdentity then
+						contentArray[rowNum] = LoadSubFeed(myString)
+						grid.setContentList(rowNum, contentArray[rowNum])
+						loaded = loaded + 1
+					end if
+					rowNum = rowNum + 1
+				next
+				
+				if loaded = showCount then
+					originalGrid = CreateGridStorage(content, myServer, m.DirectoryNames, contentArray)
+					
+					Print "### TIMER - TOTAL GRID LOADING TIME: " + itostr(totalTimer.TotalMilliseconds())
+				end if 
+			end if
+		else
+			' Currently we're not loading more...
+			'if rowcount <> showCount then
+			'	httpArray[rowCount] = createNewNetworkConnection(subPort)
+			'	rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
+			'end if
         end if
     end while
 	return 0
 End Function
 
-Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) as Integer
+Function loadNextRow(myHttp, contentKey, myContent, identityArray, myRowCount) as Integer
+	myServer = RegRead("server", "preference")
+		
+    myHttp.SetUrl(myServer+"/library/sections/"+contentKey+"/"+myContent.key)
+    myHttp.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    myHttp.EnableEncodings(true)
+	
+    Print "Experimental feed url: ";myHttp.GetUrl() 
+	
+	myHttp.AsyncGetToString()
+	identityArray[myRowCount] = myHttp.GetIdentity()
+
+	myRowCount = myRowCount + 1
+	return myRowCount
+End Function
+
+Function loadBlockingRow(myGrid, contentKey, myContent, myContentArray, myRowCount) as Integer
 	performanceTimer = CreateObject("roTimespan")
-	
+
 	performanceTimer.Mark()
-	
+
 	myServer = RegRead("server", "preference")
 	myConn = InitDirectoryFeedConnection(myServer, contentKey+"/"+myContent.key)
 	myDirectories = myConn.LoadDirectoryFeed(myConn)
 	Print "### TIMER - PAGE CONTENT TIMER -- Getting Row Content took: " + itostr(performanceTimer.TotalMilliseconds())
-	
+
 	myContentArray[myRowCount] = []
-	
+
 	performanceTimer.Mark()
 	itemCount = 0
 	for each item in myDirectories
@@ -130,19 +204,27 @@ Function loadNextRow(myGrid, contentKey, myContent, myContentArray, myRowCount) 
 	else
 		myGrid.setListVisible(myRowCount, false)
 	end if
-	
+
 	myRowCount = myRowCount + 1
-	
+
 	return myRowCount
 End Function
 
 Function addMoreContentRow(myGrid, myContentArray, myRowCount) as Integer
 	' now add the custom guys
 	contentList = [
+		{
+            Title: "By Collection",
+			Type: "sub",
+            Description:"View your catalog by collections",
+			Key: "collection",
+            HDPosterUrl:"file://pkg:/images/collections.png",
+            SDPosterUrl:"file://pkg:/images/collections.png",
+        }
         {
             Title: "By Genre",
 			Type: "sub",
-            Description:"View your catalog by Genre",
+            Description:"View your catalog by genre",
 			Key: "genre",
             HDPosterUrl:"file://pkg:/images/genre.jpg",
             SDPosterUrl:"file://pkg:/images/genre.jpg",
@@ -173,12 +255,12 @@ Function addMoreContentRow(myGrid, myContentArray, myRowCount) as Integer
 	return myRowCount
 End Function
 
-Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Object 		
-	totalTimer = CreateObject("roTimespan")
-	totalTimer.Mark()
-	
+Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Object 	
 	Print "##################################### RELOAD GRID SCREEN #####################################"
 	
+	totalTimer = CreateObject("roTimespan")
+	totalTimer.Mark()
+		
 	performanceTimer = CreateObject("roTimespan")
 	performanceTimer.Mark()
 
@@ -190,7 +272,9 @@ Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Obje
 
 	rowCount = 0	
 	
-	performanceTimer.Mark()
+	' Show the grid...
+	gridscreen.Show()
+	
 	for each items in directoryNames
 		gridscreen.setContentList(rowCount, contentArray[rowCount])
 		
@@ -202,9 +286,6 @@ Function recreateGridScreen(gridscreen, originalGrid, originalSelection) As Obje
 	next
 	
 	Print "### TIMER - RELOAD GRID TIMER -- Reloading Grid took: " + itostr(performanceTimer.TotalMilliseconds())
-	
-	' Show the grid...
-	gridscreen.Show()
 End Function
 
 

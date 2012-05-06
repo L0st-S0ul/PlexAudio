@@ -169,7 +169,7 @@ Function LoadSubFeed(xmlString)
     print "number of directories: " + itostr(directories.Count())
     for each e in directories 
 		' only do artist or albums. 
-		if e@type = "artist" OR e@type = "album" OR e@key = "all" OR e@key = "albums" then
+		if e@type = "artist" OR e@type = "album" OR e@key = "all" OR e@key = "albums" OR e@key = "recentlyAdded" then
 			o = ParseDirectoryNode(myServer, e)
 			DirectoryFeed.Push(o)
 		end if
