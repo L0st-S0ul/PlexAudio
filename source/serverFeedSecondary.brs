@@ -62,7 +62,12 @@ Function load_secondary_feed(conn As Object) As Dynamic
         print "invalid feed body"
         return invalid
     endif
-
+	
+	if xml.Directory.Count() = 0 then
+		print "directory is empty"
+		return invalid
+	endif
+	
     if xml.Directory[0].GetName() <> "Directory" then
         print "no initial secondary directory tag"
         return invalid

@@ -42,105 +42,119 @@ Function showSubGridScreen(content, myParentKey) As Integer
 	rowCount = 0
 	loaded = 0
 	
-	showCount = m.Secondaries.Count()
-	
-	performanceTimer.Mark()
-
-	'httpArray[rowCount] = createNewNetworkConnection(subPort)
-	'rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
-	
-	'httpArray[rowCount] = createNewNetworkConnection(subPort)
-	'rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
-
-	'Print "### TIMER - http object creation: " + itostr(performanceTimer.TotalMilliseconds())
-	
-	recreatingGrid = false
-	
-	' Show the grid...
-	subGrid.Show()
-	
-	while true
-        msg = wait(1, subPort)
+	'if m.Secondaries <> invalid then
+		showCount = m.Secondaries.Count()
 		
-        if type(msg) = "roGridScreenEvent" then
-            if msg.isListItemSelected() then
-				row = msg.GetIndex()
-				if row < rowCount then
-					recreatingGrid = true
-					
-					selection = msg.getData()
-					selectedItem = CreateFocusItem(row, selection)
-					
-					contentSelected = contentArray[row][selection]
-					contentType = contentSelected.ContentType
-					
-					cType = contentSelected.Type
-					if cType = "album" then
-						displayPosterScreen(subGrid, contentSelected)
-					else if cType = "artist" then
-						displayPosterScreen(subGrid, contentSelected)
-					end if
-					
-					' when we come back recreate the gridscreen
-					subGrid = CreateObject("roGridScreen")
-					subGrid.SetMessagePort(subPort)
+		performanceTimer.Mark()
+		
+		recreatingGrid = false
+		
+		' Show the grid...
+		subGrid.Show()
+		
+		while true
+			msg = wait(1, subPort)
+			
+			if type(msg) = "roGridScreenEvent" then
+				if msg.isListItemSelected() then
+					row = msg.GetIndex()
+					if row < rowCount then
+						recreatingGrid = true
 						
-					subGrid.SetDisplayMode("scale-to-fit")
-					subGrid.SetUpBehaviorAtTopRow("exit")
+						selection = msg.getData()
+						selectedItem = CreateFocusItem(row, selection)
+						
+						contentSelected = contentArray[row][selection]
+						contentType = contentSelected.ContentType
+						
+						cType = contentSelected.Type
+						if cType = "album" then
+							displayPosterScreen(subGrid, contentSelected)
+						else if cType = "artist" then
+							displayPosterScreen(subGrid, contentSelected)
+						end if
+						
+						' when we come back recreate the gridscreen
+						subGrid = CreateObject("roGridScreen")
+						subGrid.SetMessagePort(subPort)
+							
+						subGrid.SetDisplayMode("scale-to-fit")
+						subGrid.SetUpBehaviorAtTopRow("exit")
+						
+						' if we're fully loaded then let's go
+						if loaded = showCount then
+							recreateSubGridScreen(subGrid, subGridStorage, selectedItem)
+						else ' we were not fully loaded so we need to start from scratch...
+							Print "##################################### RELOAD GRID SCREEN FROM SCRATCH #####################################"
+							subGrid.SetupLists(m.SecondaryNames.Count()) 
+							subGrid.SetListNames(m.SecondaryNames)
+							
+							rowCount = 0	
+							loaded = 0
+						
+							' Show the grid...
+							subGrid.Show()
+						end if
+					end if
+				else if msg.isScreenClosed() then
+					if recreatingGrid = false then
+						Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE SUB GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+						Print "closed Secondary gridscreen: " + currentTitle
+						return -1
+					else
+						' ignore the case when the grid is being recreated and reset the system
+						recreatingGrid = false
+					end if
+				end if
+			else if type(msg) = "roUrlEvent" then			
+				if msg.GetInt() = 1 then
+					myIdentity = msg.GetSourceIdentity()
+					myString = msg.GetString()
 					
-					' if we're fully loaded then let's go
+					' find the row to put it in...
+					rowNum = 0
+					for each item in identityArray
+						if item = myIdentity then
+							contentArray[rowNum] = LoadSubFeed(myString)
+							subGrid.setContentList(rowNum, contentArray[rowNum])
+							loaded = loaded + 1
+						end if
+						rowNum = rowNum + 1
+					next
+					
 					if loaded = showCount then
-						recreateSubGridScreen(subGrid, subGridStorage, selectedItem)
-					else ' we were not fully loaded so we need to start from scratch...
-						Print "##################################### RELOAD GRID SCREEN FROM SCRATCH #####################################"
-						subGrid.SetupLists(m.SecondaryNames.Count()) 
-						subGrid.SetListNames(m.SecondaryNames)
-						
-						rowCount = 0	
-						loaded = 0
-					
-						' Show the grid...
-						subGrid.Show()
-					end if
+						subGridStorage = CreateGridStorage(content, myServer, m.SecondaryNames, contentArray)
+						Print "### TIMER - TOTAL SUB GRID LOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
+					end if 
 				end if
-            else if msg.isScreenClosed() then
-				if recreatingGrid = false then
-					Print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CLOSE SUB GRID SCREEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-					Print "closed Secondary gridscreen: " + currentTitle
-					return -1
-				else
-					' ignore the case when the grid is being recreated and reset the system
-					recreatingGrid = false
+			else
+				if rowcount <> showCount then
+					httpArray[rowCount] = createNewNetworkConnection(subPort)
+					rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
 				end if
-            end if
-		else if type(msg) = "roUrlEvent" then			
-			if msg.GetInt() = 1 then
-				myIdentity = msg.GetSourceIdentity()
-				myString = msg.GetString()
-				
-				' find the row to put it in...
-				rowNum = 0
-				for each item in identityArray
-					if item = myIdentity then
-						contentArray[rowNum] = LoadSubFeed(myString)
-						subGrid.setContentList(rowNum, contentArray[rowNum])
-						loaded = loaded + 1
-					end if
-					rowNum = rowNum + 1
-				next
-				
-				if loaded = showCount then
-					subGridStorage = CreateGridStorage(content, myServer, m.SecondaryNames, contentArray)
-					Print "### TIMER - TOTAL SUB GRID LOAD TIME: " + itostr(totalTimer.TotalMilliseconds())
-				end if 
 			end if
-		else
-			if rowcount <> showCount then
-				httpArray[rowCount] = createNewNetworkConnection(subPort)
-				rowCount = loadNextSubRow(httpArray[rowCount], myParentKey, contentKey, m.Secondaries[rowCount], identityArray, rowCount)
-			end if
-        end if
-    end while
+		end while
+	'else
+		'port = CreateObject("roMessagePort") 
+		'dialog = CreateObject("roMessageDialog")
+		'dialog.SetMessagePort(port)
+		'dialog.SetTitle("Empty Category")
+		'dialog.SetText("The server returned no data for this category to display")
+		'dialog.AddButton(1, "Go Back")
+		'dialog.Show()
+		
+		'while true
+		'	dlgMsg = wait(0, dialog.GetMessagePort())
+		'	if type(dlgMsg) = "roMessageDialogEvent"
+		'		if msg.isScreenClosed()
+		'			return -1
+		'			exit while 
+		'		else if msg.isButtonPressed() then
+		'			dialog.close()
+		'		end if
+		'	end if
+		'end while
+	'endif
 	return 0
 End Function
 
@@ -159,7 +173,6 @@ Function loadNextSubRow(myHttp, myParentKey, contentKey, myContent, identityArra
 	myRowCount = myRowCount + 1
 	return myRowCount
 End Function
-
 
 Function recreateSubGridScreen(gridscreen, originalGrid, originalSelection) As Object 			
 	Print "##################################### RELOAD GRID SCREEN #####################################"

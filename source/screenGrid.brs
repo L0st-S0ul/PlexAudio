@@ -213,14 +213,14 @@ End Function
 Function addMoreContentRow(myGrid, myContentArray, myRowCount) as Integer
 	' now add the custom guys
 	contentList = [
-		{
-            Title: "By Collection",
-			Type: "sub",
-            Description:"View your catalog by collections",
-			Key: "collection",
-            HDPosterUrl:"file://pkg:/images/collections.png",
-            SDPosterUrl:"file://pkg:/images/collections.png",
-        }
+		'{
+        '    Title: "By Collection",
+		'	Type: "sub",
+        '    Description:"View your catalog by collections",
+		'	Key: "collection",
+        '    HDPosterUrl:"file://pkg:/images/collections.png",
+        '    SDPosterUrl:"file://pkg:/images/collections.png",
+        '}
         {
             Title: "By Genre",
 			Type: "sub",
